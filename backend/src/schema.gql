@@ -1,0 +1,222 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AttachmentEntity {
+  createdAt: DateTime!
+  id: String!
+  missionId: String
+  name: String!
+  productId: String
+  type: AttachmentType!
+  url: String!
+}
+
+enum AttachmentType {
+  FILE
+  LINK
+}
+
+type AuthResponse {
+  accessToken: String!
+  expiresIn: Float!
+}
+
+type BreadcrumbItemType {
+  id: String!
+  title: String!
+}
+
+type ChatMessageEntity {
+  createdAt: DateTime!
+  fileName: String
+  fileUrl: String
+  id: String!
+  sender: UserEntity
+  stepId: String
+  text: String!
+}
+
+input CreateAttachmentInput {
+  missionId: String
+  name: String!
+  productId: String
+  type: AttachmentType!
+  url: String!
+}
+
+input CreateJudgingStepInput {
+  judgeId: Float!
+  missionId: String!
+  title: String!
+}
+
+input CreateMissionInput {
+  assigneeId: Float!
+  description: String! = ""
+  dueDate: String!
+  priority: Priority! = NORMAL
+  productId: String!
+  title: String!
+}
+
+input CreateProductInput {
+  description: String! = ""
+  parentId: String!
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type JudgingStepEntity {
+  id: String!
+  judge: UserEntity
+  order: Float!
+  status: StepStatus!
+  title: String!
+}
+
+input LoginInput {
+  password: String!
+  phone: String!
+}
+
+type MissionEntity {
+  assignee: UserEntity
+  createdAt: DateTime!
+  description: String!
+  dueDate: DateTime!
+  id: String!
+  judgingSteps: [JudgingStepEntity!]
+  priority: Priority!
+  status: MissionStatus!
+  title: String!
+}
+
+enum MissionStatus {
+  DONE
+  IN_PROGRESS
+  JUDGING
+  NEEDS_FIX
+  PENDING
+}
+
+type Mutation {
+  createAttachment(input: CreateAttachmentInput!): AttachmentEntity!
+  createJudgingStep(input: CreateJudgingStepInput!): JudgingStepEntity!
+  createMission(input: CreateMissionInput!): MissionEntity!
+  createProduct(input: CreateProductInput!): ProductEntity!
+  deleteAttachment(id: String!): Boolean!
+  deleteProduct(id: String!): Boolean!
+  login(input: LoginInput!): AuthResponse!
+  markAllNotificationsRead: Boolean!
+  markNotificationRead(id: String!): Boolean!
+  sendMessage(input: SendMessageInput!): ChatMessageEntity!
+  takeMission(id: String!): MissionEntity!
+  updateMission(id: String!, input: UpdateMissionInput!): MissionEntity!
+  updateMissionStatus(id: String!, status: MissionStatus!): MissionEntity!
+  updateProduct(id: String!, input: UpdateProductInput!): ProductEntity!
+  updateProfile(input: UpdateUserInput!): UserEntity!
+  updateStepStatus(id: String!, status: StepStatus!): JudgingStepEntity!
+  uploadFile(fileUrl: String): String!
+}
+
+type NotificationEntity {
+  createdAt: DateTime!
+  id: String!
+  missionId: String
+  read: Boolean!
+  sender: UserEntity
+  stepId: String
+  text: String!
+  type: NotificationType!
+}
+
+enum NotificationType {
+  APPROVAL
+  ASSIGNMENT
+  CHAT
+  FIX
+}
+
+enum Priority {
+  IMPORTANT
+  NORMAL
+  URGENT
+}
+
+type ProductEntity {
+  children: [ProductEntity!]
+  description: String!
+  id: String!
+  missions: [MissionEntity!]
+  parentId: String
+  title: String!
+}
+
+type Query {
+  attachmentsByMission(missionId: String!): [AttachmentEntity!]!
+  attachmentsByProduct(productId: String!): [AttachmentEntity!]!
+  chatMessages(missionId: String!, stepId: String): [ChatMessageEntity!]!
+  judgingStep(id: String!): JudgingStepEntity
+  me: UserEntity
+  mission(id: String!): MissionEntity
+  missionsByProduct(productId: String!): [MissionEntity!]!
+  notifications: [NotificationEntity!]!
+  product(id: String!): ProductEntity
+  productBreadcrumb(id: String!): [BreadcrumbItemType!]!
+  productTree(rootId: String): ProductEntity
+  unreadNotificationCount: Float!
+  users: [UserEntity!]!
+}
+
+input SendMessageInput {
+  fileName: String
+  fileUrl: String
+  missionId: String!
+  stepId: String
+  text: String!
+}
+
+enum StepStatus {
+  APPROVED
+  NEEDS_FIX
+  NOT_DONE
+  WAITING_JUDGE
+}
+
+input UpdateMissionInput {
+  description: String
+  dueDate: String
+  priority: Priority
+  title: String
+}
+
+input UpdateProductInput {
+  description: String
+  title: String
+}
+
+input UpdateUserInput {
+  avatarId: String
+  name: String
+  password: String
+}
+
+type UserEntity {
+  avatar: String
+  avatarId: String
+  id: Int!
+  name: String!
+  phone: String!
+  role: UserRole!
+}
+
+enum UserRole {
+  ADMIN
+  JUDGE
+  USER
+}

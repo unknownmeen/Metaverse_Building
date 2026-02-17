@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  JUDGE
+}
+
+enum MissionStatus {
+  PENDING
+  IN_PROGRESS
+  JUDGING
+  NEEDS_FIX
+  DONE
+}
+
+enum StepStatus {
+  NOT_DONE
+  WAITING_JUDGE
+  NEEDS_FIX
+  APPROVED
+}
+
+enum Priority {
+  URGENT
+  IMPORTANT
+  NORMAL
+}
+
+enum NotificationType {
+  CHAT
+  APPROVAL
+  ASSIGNMENT
+  FIX
+}
+
+enum AttachmentType {
+  FILE
+  LINK
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  password  String
+  avatarId  String?
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedMissions   Mission[]        @relation("MissionAssignee")
+  createdMissions    Mission[]        @relation("MissionCreator")
+  judgingSteps      JudgingStep[]
+  sentChatMessages  ChatMessage[]
+  receivedNotifications Notification[] @relation("NotificationRecipient")
+  sentNotifications   Notification[] @relation("NotificationSender")
+}
+
+model Product {
+  id          String   @id
+  title       String
+  description String   @default("")
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Product?  @relation("ProductTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Product[] @relation("ProductTree")
+  missions Mission[]
+  attachments Attachment[]
+}
+
+model Mission {
+  id          String        @id
+  title       String
+  description String        @default("")
+  status      MissionStatus @default(PENDING)
+  priority    Priority      @default(NORMAL)
+  createdAt   DateTime      @default(now())
+  dueDate     DateTime
+  assigneeId  Int
+  productId  String
+  creatorId  Int?
+  updatedAt   DateTime      @updatedAt
+
+  assignee    User          @relation("MissionAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  creator     User?         @relation("MissionCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  judgingSteps JudgingStep[]
+  chatMessages ChatMessage[]
+  attachments  Attachment[]
+  notifications Notification[]
+}
+
+model JudgingStep {
+  id        String     @id
+  title     String
+  status    StepStatus @default(NOT_DONE)
+  order     Int
+  judgeId   Int
+  missionId String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  judge   User    @relation(fields: [judgeId], references: [id], onDelete: Restrict)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  chatMessages ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id
+  text      String
+  createdAt DateTime @default(now())
+  senderId  Int
+  missionId String
+  stepId    String?
+  fileName  String?
+  fileUrl   String?
+
+  sender  User    @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  step    JudgingStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String           @id
+  type      NotificationType
+  text      String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  userId    Int
+  senderId  Int?
+  missionId String?
+  stepId    String?
+
+  recipient User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  sender    User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+  mission   Mission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
+}
+
+model Attachment {
+  id         String         @id
+  name       String
+  url        String
+  type       AttachmentType
+  productId  String?
+  missionId  String?
+  createdAt  DateTime       @default(now())
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mission Mission? @relation(fields: [missionId], references: [id], onDelete: Cascade)
+}

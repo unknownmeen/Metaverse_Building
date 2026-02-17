@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  background-color: #f0f4ff;
+  color: #1e293b;
+  min-height: 100vh;
+  text-align: right;
+}
+
+*, *::before, *::after {
+  text-align: inherit;
+}
+
+input, textarea, select {
+  text-align: right;
+}
+
+input[dir="ltr"], [dir="ltr"] {
+  text-align: left;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a5b4fc;
+}
+
+.drawer-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.drawer-content {
+  animation: slideLeft 0.3s ease-out;
+}
+
+.drawer-slide-left {
+  animation: slideFromLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideFromLeft {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+
+.bottom-sheet {
+  animation: slideUp 0.3s ease-out;
+}
+
+.product-box-enter {
+  animation: scaleIn 0.4s ease-out;
+}
+
+.zoom-enter {
+  animation: zoomIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes zoomIn {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideLeft {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  0% { transform: translateX(20px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes shrinkWidth {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+@layer utilities {
+  .gradient-violet {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  }
+  .gradient-cyan {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+  }
+  .gradient-rose {
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+  }
+  .gradient-amber {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+  .gradient-emerald {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+  .gradient-blue {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+  }
+  .gradient-pink {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+  }
+  .gradient-teal {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+  }
+}
+
+/* رفع بوردر/پس‌زمینه اضافی تقویم */
+.persian-date-picker.rmdp-wrapper {
+  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* حذف سایه و بوردر اضافی فلش */
+.rmdp-container .persian-date-picker.ep-arrow::after {
+  box-shadow: none !important;
+}
+
+.persian-date-picker .rmdp-calendar {
+  min-width: 336px;
+  border: 1.5px solid #d2d7e3;
+  border-radius: 24px;
+  background: #f5f6f8;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+  padding: 16px 16px 14px;
+}
+
+.persian-date-picker .rmdp-top-class {
+  border: none;
+  border-bottom: 1px solid #dadee6;
+  border-radius: 0;
+  padding: 2px 0 12px;
+  margin-bottom: 12px;
+  background: transparent;
+}
+
+.persian-date-picker .rmdp-header {
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.persian-date-picker .rmdp-arrow-container {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+}
+
+.persian-date-picker .rmdp-arrow-container:hover {
+  background: #e8edf6;
+}
+
+.persian-date-picker .rmdp-arrow {
+  border: solid #2f3543;
+  border-width: 0 2px 2px 0;
+}
+
+.persian-date-picker .rmdp-header-values {
+  color: #171c26;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.persian-date-picker .rmdp-week-day {
+  color: #767b86;
+  font-weight: 700;
+  font-size: 14px;
+  height: 42px;
+}
+
+.persian-date-picker .rmdp-week {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.persian-date-picker .rmdp-day {
+  width: 42px;
+  height: 42px;
+}
+
+.persian-date-picker .rmdp-day span {
+  color: #161b25;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 999px;
+}
+
+.persian-date-picker .rmdp-day.rmdp-today span {
+  background-color: #e7f1ff;
+  color: #2f6fd6;
+}
+
+.persian-date-picker .rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: #5d9ad7;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.persian-date-picker .rmdp-day.rmdp-disabled span {
+  color: #c8ccd6 !important;
+  opacity: 0.7;
+}
+
+.persian-date-picker .rmdp-day.rmdp-disabled:hover span {
+  background: transparent !important;
+}

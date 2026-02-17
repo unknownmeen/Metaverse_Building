@@ -1,0 +1,86 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { v4 as uuidv4 } from 'uuid';
+import { MissionStatus, Priority } from '@prisma/client';
+import { MissionRepository } from './mission.repository';
+import { MissionStateMachine } from './state/mission-state-machine';
+import { CreateMissionInput } from './dto/create-mission.input';
+import { UpdateMissionInput } from './dto/update-mission.input';
+import {
+  MISSION_STATUS_UPDATED,
+  MissionStatusUpdatedEvent,
+  MISSION_ASSIGNED,
+  MissionAssignedEvent,
+} from '../common/events/mission.events';
+
+@Injectable()
+export class MissionWriteService {
+  private stateMachine = new MissionStateMachine();
+
+  constructor(
+    private missionRepo: MissionRepository,
+    private eventEmitter: EventEmitter2,
+  ) {}
+
+  async create(input: CreateMissionInput, creatorId: number) {
+    const id = `m-${uuidv4().slice(0, 8)}`;
+    return this.missionRepo.create({
+      id,
+      title: input.title,
+      description: input.description ?? '',
+      status: MissionStatus.PENDING,
+      priority: input.priority ?? 'NORMAL',
+      dueDate: new Date(input.dueDate),
+      assigneeId: input.assigneeId,
+      productId: input.productId,
+      creatorId,
+    });
+  }
+
+  async update(id: string, input: UpdateMissionInput) {
+    const existing = await this.missionRepo.findById(id);
+    if (!existing) throw new NotFoundException('ماموریت یافت نشد');
+    const data: { title?: string; description?: string; priority?: Priority; dueDate?: Date } = {};
+    if (input.title != null) data.title = input.title;
+    if (input.description != null) data.description = input.description;
+    if (input.priority != null) data.priority = input.priority;
+    if (input.dueDate != null) data.dueDate = new Date(input.dueDate);
+    return this.missionRepo.update(id, data);
+  }
+
+  async updateStatus(id: string, newStatus: MissionStatus, userId: number) {
+    const existing = await this.missionRepo.findById(id);
+    if (!existing) throw new NotFoundException('ماموریت یافت نشد');
+    this.stateMachine.validateTransition(existing.status, newStatus);
+    const previousStatus = existing.status;
+    const updated = await this.missionRepo.updateStatus(id, newStatus);
+
+    this.eventEmitter.emit(MISSION_STATUS_UPDATED, {
+      missionId: id,
+      previousStatus,
+      newStatus,
+      userId,
+    } as MissionStatusUpdatedEvent);
+
+    return updated;
+  }
+
+  async takeMission(id: string, userId: number) {
+    const existing = await this.missionRepo.findById(id);
+    if (!existing) throw new NotFoundException('ماموریت یافت نشد');
+    if (existing.status !== MissionStatus.PENDING) {
+      throw new NotFoundException('این مأموریت قبلاً پذیرفته شده است');
+    }
+    const previousAssigneeId = existing.assigneeId;
+    const updated = await this.missionRepo.updateAssigneeAndStatus(id, userId, MissionStatus.IN_PROGRESS);
+
+    this.eventEmitter.emit(MISSION_ASSIGNED, {
+      missionId: id,
+      previousAssigneeId,
+      newAssigneeId: userId,
+      assignedById: userId,
+    } as MissionAssignedEvent);
+
+    return updated;
+  }
+}
