@@ -240,13 +240,13 @@ export default function AttachmentSection({ productId, missionId, readOnly = fal
                 <button
                   onClick={handleAddLink}
                   disabled={uploading}
-                  className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-semibold text-sm transition-colors disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center"
                 >
                   {t('common.confirm')}
                 </button>
                 <button
                   onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors"
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors flex items-center justify-center"
                 >
                   {t('common.cancel')}
                 </button>

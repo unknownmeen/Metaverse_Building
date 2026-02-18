@@ -755,7 +755,7 @@ export default function MissionDetailDrawer() {
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={deleting}
-                    className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors disabled:opacity-70 border border-slate-200"
+                    className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors disabled:opacity-70 border border-slate-200 flex items-center justify-center"
                   >
                     {t('common.cancel_short')}
                   </button>
