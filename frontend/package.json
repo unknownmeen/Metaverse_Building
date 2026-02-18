@@ -19,6 +19,7 @@
     "react-dom": "^19.2.0",
     "react-multi-date-picker": "^4.5.2",
     "react-router-dom": "^7.13.0",
+    "rxjs": "^7.8.2",
     "tailwind-merge": "^3.4.1"
   },
   "devDependencies": {
