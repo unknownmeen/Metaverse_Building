@@ -35,7 +35,11 @@ export default function LoginPage() {
 
       if (data?.login?.accessToken) {
         tokenService.setToken(data.login.accessToken);
-        await fetchInitialData();
+        const initialized = await fetchInitialData();
+        if (!initialized) {
+          setError(t('errors.auth.login_failed'));
+          return;
+        }
         toastService.success(t('success.login'));
         navigate('/projects');
       }

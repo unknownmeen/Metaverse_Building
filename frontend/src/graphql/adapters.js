@@ -88,13 +88,14 @@ export function transformUsers(users) {
  */
 export function transformMission(mission) {
   if (!mission) return null;
+  const assigneeUser = transformUser(mission.assignee);
   const steps = (mission.judgingSteps || []).map((step) => ({
     id: step.id,
     title: step.title,
     status: normalizeEnum(step.status),
     order: step.order,
     judgeId: step.judge?.id ?? null,
-    judge: step.judge,
+    judge: transformUser(step.judge),
   }));
   return {
     type: 'mission',
@@ -103,7 +104,8 @@ export function transformMission(mission) {
     description: mission.description || '',
     status: normalizeEnum(mission.status),
     priority: normalizeEnum(mission.priority),
-    assignee: mission.assignee?.id ?? null,
+    assignee: assigneeUser?.id ?? null,
+    assigneeUser,
     createdAt: formatDate(mission.createdAt),
     dueDate: formatDate(mission.dueDate),
     dueDateIso: mission.dueDate || null,

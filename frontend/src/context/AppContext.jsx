@@ -70,6 +70,40 @@ function findProductContainingMission(node, missionId) {
   return null;
 }
 
+function upsertUser(userMap, user) {
+  if (!user?.id) return;
+  const existing = userMap.get(user.id) || {};
+  userMap.set(user.id, { ...existing, ...user });
+}
+
+function collectUsersFromTree(node, userMap) {
+  if (!node?.children) return;
+  for (const child of node.children) {
+    if (child.type === 'mission') {
+      upsertUser(userMap, child.assigneeUser);
+      for (const step of child.judgingSteps || []) {
+        upsertUser(userMap, step.judge);
+      }
+    } else if (child.type === 'product') {
+      collectUsersFromTree(child, userMap);
+    }
+  }
+}
+
+function deriveUsersFromProducts(products, currentUser) {
+  const userMap = new Map();
+  upsertUser(userMap, currentUser);
+  collectUsersFromTree(products, userMap);
+  return Array.from(userMap.values());
+}
+
+function mergeUsers(primaryUsers, fallbackUsers) {
+  const userMap = new Map();
+  for (const user of fallbackUsers || []) upsertUser(userMap, user);
+  for (const user of primaryUsers || []) upsertUser(userMap, user);
+  return Array.from(userMap.values());
+}
+
 /* ───────────── State & Reducer ───────────── */
 
 const initialState = {
@@ -200,41 +234,63 @@ export function AppProvider({ children }) {
 
   /**
    * Fetch all initial data from the API after authentication.
-   * Runs all queries in parallel for maximum performance.
+   * Runs core queries for all users and admin-only queries conditionally.
    */
   const fetchInitialData = useCallback(async () => {
+    let isSuccess = false;
     try {
       dispatch({ type: 'SET_LOADING', loading: true });
 
-      const [meResult, productsResult, usersResult, notificationsResult] =
-        await Promise.all([
-          client.query({ query: ME }),
-          client.query({ query: PRODUCT_TREE }),
-          client.query({ query: GET_USERS }),
-          client.query({ query: GET_NOTIFICATIONS }),
-        ]);
+      const meResult = await client.query({ query: ME });
+      const currentUser = meResult.data?.me ? transformUser(meResult.data.me) : null;
+      if (!currentUser) {
+        throw new Error('Failed to fetch authenticated user profile');
+      }
+      dispatch({ type: 'SET_AUTH_DATA', user: currentUser });
 
-      if (meResult.data?.me) {
-        dispatch({ type: 'SET_AUTH_DATA', user: transformUser(meResult.data.me) });
+      const usersPromise =
+        currentUser.role === 'admin'
+          ? client.query({ query: GET_USERS }).catch((error) => {
+              console.warn('Failed to fetch users list:', error);
+              return null;
+            })
+          : Promise.resolve(null);
+
+      const [productsResult, notificationsResult, usersResult] = await Promise.all([
+        client.query({ query: PRODUCT_TREE }),
+        client.query({ query: GET_NOTIFICATIONS }).catch((error) => {
+          console.warn('Failed to fetch notifications:', error);
+          return null;
+        }),
+        usersPromise,
+      ]);
+
+      const transformedProducts = productsResult.data?.productTree
+        ? transformProductTree(productsResult.data.productTree)
+        : null;
+      const derivedUsers = deriveUsersFromProducts(transformedProducts, currentUser);
+
+      if (currentUser.role === 'admin') {
+        const apiUsers = usersResult?.data?.users ? transformUsers(usersResult.data.users) : [];
+        dispatch({ type: 'SET_USERS', users: mergeUsers(apiUsers, derivedUsers) });
+      } else {
+        dispatch({ type: 'SET_USERS', users: derivedUsers });
       }
 
-      if (productsResult.data?.productTree) {
+      if (transformedProducts) {
         dispatch({
           type: 'SET_PRODUCTS',
-          products: transformProductTree(productsResult.data.productTree),
+          products: transformedProducts,
         });
       }
 
-      if (usersResult.data?.users) {
-        dispatch({ type: 'SET_USERS', users: transformUsers(usersResult.data.users) });
-      }
-
-      if (notificationsResult.data?.notifications) {
+      if (notificationsResult?.data?.notifications) {
         dispatch({
           type: 'SET_NOTIFICATIONS',
           notifications: transformNotifications(notificationsResult.data.notifications),
         });
       }
+      isSuccess = true;
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
       tokenService.removeToken();
@@ -242,6 +298,7 @@ export function AppProvider({ children }) {
     } finally {
       dispatch({ type: 'SET_LOADING', loading: false });
     }
+    return isSuccess;
   }, [client]);
 
   useEffect(() => {
