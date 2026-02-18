@@ -17,7 +17,6 @@ async function createOrUpdateUser(
   role: UserRole,
 ) {
   const hashed = await bcrypt.hash(password, 10);
-  const data = { name, phone, password: hashed, role };
   const existing = await prisma.user.findUnique({ where: { phone } });
   if (existing) {
     return prisma.user.update({
@@ -25,7 +24,12 @@ async function createOrUpdateUser(
       data: { name, password: hashed, role },
     });
   }
-  return prisma.user.create({ data });
+  // id صریح چون sequence دیتابیس بعد از seed با idهای دستی ممکنه اشتباه باشه
+  const { _max } = await prisma.user.aggregate({ _max: { id: true } });
+  const nextId = (_max?.id ?? 0) + 1;
+  return prisma.user.create({
+    data: { id: nextId, name, phone, password: hashed, role },
+  });
 }
 
 async function main() {
