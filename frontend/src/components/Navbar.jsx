@@ -4,6 +4,7 @@ import { Map, Sun, UserCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { t } from '../services/i18n';
+import UserAvatar from './UserAvatar';
 
 const navItems = [
   { path: '/coming-soon', labelKey: 'nav.dar_mahzar', icon: Sun, badgeKey: 'nav.coming_soon' },
@@ -18,7 +19,6 @@ export default function Navbar() {
   const location = useLocation();
   const ref = useRef(null);
   const userAvatar = state.user?.avatar;
-  const isProfilePage = location.pathname === '/profile';
 
   useEffect(() => {
     function handleClick(e) {
@@ -48,8 +48,8 @@ export default function Navbar() {
             : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
         )}
       >
-        {isProfilePage && userAvatar ? (
-          <img src={userAvatar} alt="" className="w-full h-full object-cover" />
+        {location.pathname === '/profile' ? (
+          <UserAvatar src={userAvatar} className="w-full h-full" />
         ) : (
           <CurrentIcon className="w-5 h-5" />
         )}
@@ -72,8 +72,8 @@ export default function Navbar() {
                 )}
                 title={t(item.labelKey)}
               >
-                {item.path === '/profile' && userAvatar ? (
-                  <img src={userAvatar} alt="" className="w-full h-full object-cover" />
+                {item.path === '/profile' ? (
+                  <UserAvatar src={userAvatar} className="w-full h-full" />
                 ) : (
                   <item.icon className="w-5 h-5" />
                 )}

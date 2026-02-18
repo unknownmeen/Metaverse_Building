@@ -33,7 +33,7 @@ export class MissionRepository {
     status: MissionStatus;
     priority: Priority;
     dueDate: Date;
-    assigneeId: number;
+    assigneeId?: number | null;
     productId: string;
     creatorId?: number;
   }) {
@@ -43,7 +43,7 @@ export class MissionRepository {
     });
   }
 
-  async update(id: string, data: { title?: string; description?: string; priority?: Priority; dueDate?: Date }) {
+  async update(id: string, data: { title?: string; description?: string; priority?: Priority; dueDate?: Date; assigneeId?: number; status?: MissionStatus }) {
     return this.prisma.mission.update({
       where: { id },
       data,
@@ -73,5 +73,10 @@ export class MissionRepository {
       data: { assigneeId, status },
       include: { assignee: { select: { id: true, name: true, phone: true, avatarId: true, role: true } } },
     });
+  }
+
+  async delete(id: string) {
+    await this.prisma.mission.delete({ where: { id } });
+    return true;
   }
 }

@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import ProductBox from '../components/ProductBox';
 import ProductInfoDrawer from '../components/ProductInfoDrawer';
 import CreateSubProductDrawer from '../components/CreateSubProductDrawer';
 import CreateMissionDrawer from '../components/CreateMissionDrawer';
 import MissionDetailDrawer from '../components/MissionDetailDrawer';
-import { FolderOpen } from 'lucide-react';
+import UserAvatar from '../components/UserAvatar';
+import { FolderOpen, MoreHorizontal, Info, FolderPlus, ListPlus } from 'lucide-react';
 import { t } from '../services/i18n';
 
 export default function ProjectManagement() {
-  const { getCurrentProduct, state } = useApp();
+  const { getCurrentProduct, state, dispatch } = useApp();
+  const [showProductMenu, setShowProductMenu] = useState(false);
   const currentProduct = getCurrentProduct();
 
   if (!currentProduct) return null;
@@ -16,12 +19,73 @@ export default function ProjectManagement() {
   const children = currentProduct.children || [];
   const subProducts = children.filter(c => c.type === 'product');
 
+  const handleProductInfo = () => {
+    dispatch({ type: 'OPEN_PRODUCT_INFO_DRAWER', product: currentProduct });
+    setShowProductMenu(false);
+  };
+
+  const handleCreateSubProduct = () => {
+    dispatch({ type: 'OPEN_CREATE_SUB_PRODUCT', parentId: currentProduct.id });
+    setShowProductMenu(false);
+  };
+
+  const handleCreateMission = () => {
+    dispatch({ type: 'OPEN_CREATE_MISSION', parentId: currentProduct.id });
+    setShowProductMenu(false);
+  };
+
   return (
     <>
-      <div key={state.currentProductId} className="px-4 py-5 zoom-enter">
+      <div key={state.currentProductId} className="px-4 py-5 zoom-enter relative">
         {/* Page Header */}
         <div className="mb-5 text-right">
-          <h1 className="text-lg font-black text-slate-800 mb-1">{currentProduct.title}</h1>
+          <div className="mb-1 flex items-start justify-between gap-3">
+            <h1 className="text-lg font-black text-slate-800 flex-1">{currentProduct.title}</h1>
+            <div className="relative flex-shrink-0" style={{ zIndex: showProductMenu ? 60 : 10 }}>
+              <button
+                onClick={() => setShowProductMenu(!showProductMenu)}
+                className="p-2 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-primary-500 transition-colors"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </button>
+              {showProductMenu && (
+                <>
+                  <div className="fixed inset-0" style={{ zIndex: 55 }} onClick={() => setShowProductMenu(false)} />
+                  <div
+                    className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-scale-in"
+                    style={{ zIndex: 56 }}
+                  >
+                    <button
+                      onClick={handleProductInfo}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Info className="w-4 h-4 text-cyan-500" />
+                      {t('product.info')}
+                    </button>
+                    {state.isAdmin && (
+                      <>
+                        <div className="border-t border-slate-100" />
+                        <button
+                          onClick={handleCreateSubProduct}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <FolderPlus className="w-4 h-4 text-emerald-500" />
+                          {t('product.create_sub')}
+                        </button>
+                        <button
+                          onClick={handleCreateMission}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <ListPlus className="w-4 h-4 text-amber-500" />
+                          {t('mission.create')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
           {currentProduct.description && (
             <p className="text-xs text-slate-500 leading-relaxed">{currentProduct.description}</p>
           )}
@@ -102,7 +166,7 @@ function MissionInlineCard({ mission }) {
         </div>
         {assignee && (
           <div className="flex items-center gap-1.5">
-            <img src={assignee.avatar} alt="" className="w-4 h-4 rounded-full" />
+            <UserAvatar src={assignee.avatar} className="w-4 h-4" />
             <span className="text-[11px] text-slate-500">{assignee.name}</span>
           </div>
         )}

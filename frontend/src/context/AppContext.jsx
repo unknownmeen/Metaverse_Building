@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { useApolloClient } from '@apollo/client/react';
 import { PRODUCT_TREE, ME, GET_USERS, GET_NOTIFICATIONS } from '../graphql/queries';
 import { tokenService } from '../services/tokenService';
@@ -10,6 +10,8 @@ import {
 } from '../graphql/adapters';
 
 const AppContext = createContext();
+const PRODUCTS_POLL_MS = 7000;
+const NOTIFICATIONS_POLL_MS = 4000;
 
 /* ───────────── Tree Traversal Helpers ───────────── */
 
@@ -104,6 +106,17 @@ function mergeUsers(primaryUsers, fallbackUsers) {
   return Array.from(userMap.values());
 }
 
+function isAuthFailure(error) {
+  const graphQLErrors = error?.graphQLErrors || [];
+  const hasAuthGraphQLError = graphQLErrors.some((err) =>
+    ['UNAUTHENTICATED', 'UNAUTHORIZED'].includes(err?.extensions?.code)
+  );
+  const networkStatus = error?.networkError?.statusCode || error?.statusCode;
+  const message = String(error?.message || '');
+  const hasAuthMessage = /unauthenticated|unauthorized|token|jwt.*expir|expired/i.test(message);
+  return hasAuthGraphQLError || networkStatus === 401 || hasAuthMessage;
+}
+
 /* ───────────── State & Reducer ───────────── */
 
 const initialState = {
@@ -134,9 +147,15 @@ function reducer(state, action) {
 
     case 'SET_AUTH_DATA': {
       const user = action.user;
+      const existingUsers = state.users || [];
+      const userExists = existingUsers.some((u) => u.id === user.id);
+      const nextUsers = userExists
+        ? existingUsers.map((u) => (u.id === user.id ? { ...u, ...user } : u))
+        : [...existingUsers, user];
       return {
         ...state,
         user,
+        users: nextUsers,
         isLoggedIn: true,
         isAdmin: user.role === 'admin',
       };
@@ -231,6 +250,8 @@ function reducer(state, action) {
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const client = useApolloClient();
+  const refreshingProductsRef = useRef(false);
+  const refreshingNotificationsRef = useRef(false);
 
   /**
    * Fetch all initial data from the API after authentication.
@@ -293,8 +314,10 @@ export function AppProvider({ children }) {
       isSuccess = true;
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
-      tokenService.removeToken();
-      dispatch({ type: 'LOGOUT' });
+      if (tokenService.isTokenExpired() || isAuthFailure(error)) {
+        tokenService.removeToken();
+        dispatch({ type: 'LOGOUT' });
+      }
     } finally {
       dispatch({ type: 'SET_LOADING', loading: false });
     }
@@ -314,7 +337,9 @@ export function AppProvider({ children }) {
    * Call after any mutation that modifies products/missions.
    */
   const refreshProducts = useCallback(async () => {
+    if (refreshingProductsRef.current || !tokenService.isAuthenticated()) return;
     try {
+      refreshingProductsRef.current = true;
       client.cache.evict({ fieldName: 'productTree' });
       client.cache.gc();
       const { data } = await client.query({
@@ -329,6 +354,8 @@ export function AppProvider({ children }) {
       }
     } catch (error) {
       console.error('Failed to refresh products:', error);
+    } finally {
+      refreshingProductsRef.current = false;
     }
   }, [client]);
 
@@ -336,7 +363,9 @@ export function AppProvider({ children }) {
    * Refresh notifications from the server.
    */
   const refreshNotifications = useCallback(async () => {
+    if (refreshingNotificationsRef.current || !tokenService.isAuthenticated()) return;
     try {
+      refreshingNotificationsRef.current = true;
       const { data } = await client.query({
         query: GET_NOTIFICATIONS,
         fetchPolicy: 'network-only',
@@ -349,8 +378,51 @@ export function AppProvider({ children }) {
       }
     } catch (error) {
       console.error('Failed to refresh notifications:', error);
+    } finally {
+      refreshingNotificationsRef.current = false;
     }
   }, [client]);
+
+  useEffect(() => {
+    if (!state.isLoggedIn || state.loading) return;
+
+    let isStopped = false;
+
+    const syncNow = async () => {
+      if (isStopped || document.hidden) return;
+      await Promise.allSettled([refreshProducts(), refreshNotifications()]);
+    };
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        syncNow();
+      }
+    };
+
+    const onFocus = () => {
+      syncNow();
+    };
+
+    const productsInterval = setInterval(() => {
+      if (!document.hidden) refreshProducts();
+    }, PRODUCTS_POLL_MS);
+
+    const notificationsInterval = setInterval(() => {
+      if (!document.hidden) refreshNotifications();
+    }, NOTIFICATIONS_POLL_MS);
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onFocus);
+    syncNow();
+
+    return () => {
+      isStopped = true;
+      clearInterval(productsInterval);
+      clearInterval(notificationsInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [state.isLoggedIn, state.loading, refreshProducts, refreshNotifications]);
 
   /**
    * Logout: clear token, reset Apollo cache, reset state.

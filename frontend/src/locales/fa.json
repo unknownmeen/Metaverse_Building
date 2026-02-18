@@ -28,12 +28,14 @@
     "upload_error": "خطا در آپلود فایل",
     "invalid_url": "لینک وارد شده معتبر نیست",
     "enter_link": "لینک را وارد کنید",
+    "link_placeholder_example": "مثال: https://example.com",
     "link_name": "نام لینک (اختیاری)",
     "confirm": "تأیید",
     "cancel": "انصراف",
     "cancel_short": "لغو",
     "edit": "ویرایش",
-    "uploading": "در حال آپلود..."
+    "uploading": "در حال آپلود...",
+    "logout": "خروج"
   },
   "nav": {
     "dar_mahzar": "در محضر",
@@ -108,6 +110,7 @@
     "due_date": "تاریخ تحویل",
     "due_date_placeholder": "۱۴۰۴/۱۲/۰۱",
     "assignee": "انجام‌دهنده",
+    "assignee_optional": "انجام‌دهنده (اختیاری)",
     "priority": "اولویت زمانی",
     "created_at": "زمان ایجاد"
   },
@@ -116,6 +119,7 @@
     "add_step": "افزودن گام",
     "step_title_placeholder": "عنوان گام",
     "judge": "مسئول داوری",
+    "judge_label": "داور: {{name}}",
     "locked": "قفل"
   },
   "chat": {
@@ -203,7 +207,11 @@
       "create_failed": "خطا در ایجاد مأموریت. لطفاً دوباره تلاش کنید.",
       "update_failed": "خطا در بروزرسانی مأموریت.",
       "take_failed": "خطا در پذیرفتن مأموریت. لطفاً دوباره تلاش کنید.",
-      "status_update_failed": "خطا در تغییر وضعیت مأموریت."
+      "status_update_failed": "خطا در تغییر وضعیت مأموریت.",
+      "delete_confirm_title": "حذف مأموریت",
+      "delete_confirm": "آیا از حذف این مأموریت اطمینان دارید؟ این عمل قابل بازگشت نیست.",
+      "delete_action": "حذف",
+      "delete_failed": "خطا در حذف مأموریت."
     },
     "chat": {
       "send_failed": "خطا در ارسال پیام. لطفاً دوباره تلاش کنید.",
@@ -232,6 +240,7 @@
     "mission_created": "مأموریت با موفقیت ایجاد شد.",
     "mission_updated": "مأموریت با موفقیت بروزرسانی شد.",
     "mission_taken": "مأموریت با موفقیت پذیرفته شد.",
+    "mission_deleted": "مأموریت با موفقیت حذف شد.",
     "status_updated": "وضعیت با موفقیت تغییر یافت.",
     "message_sent": "پیام با موفقیت ارسال شد.",
     "profile_updated": "پروفایل با موفقیت بروزرسانی شد.",

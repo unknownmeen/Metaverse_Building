@@ -28,6 +28,14 @@ export class JudgingRepository {
     });
   }
 
+  async update(id: string, data: { title?: string; judgeId?: number }) {
+    return this.prisma.judgingStep.update({
+      where: { id },
+      data,
+      include: { judge: { select: { id: true, name: true, phone: true, avatarId: true, role: true } }, mission: true },
+    });
+  }
+
   async getMaxOrder(missionId: string) {
     const last = await this.prisma.judgingStep.findFirst({
       where: { missionId },

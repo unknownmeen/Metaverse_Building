@@ -10,6 +10,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET || 'default-secret-change-me',
+      // Allow a small clock skew between client/server to avoid false early expiry.
+      clockTolerance: Number(process.env.JWT_CLOCK_TOLERANCE_SECONDS || 30),
     });
   }
 

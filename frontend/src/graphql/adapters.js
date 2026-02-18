@@ -7,7 +7,6 @@
  */
 
 import { t } from '../services/i18n';
-import { avatarList } from '../data/mockData';
 
 function resolveAvatarUrl(user) {
   if (!user) return null;
@@ -15,8 +14,7 @@ function resolveAvatarUrl(user) {
   const aid = user.avatarId;
   if (!aid) return null;
   if (aid.startsWith('http://') || aid.startsWith('https://') || aid.startsWith('/')) return aid;
-  const preset = avatarList.find((a) => a.id === aid);
-  return preset ? preset.url : null;
+  return null;
 }
 
 /* ───────────── Enum Normalization ───────────── */

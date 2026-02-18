@@ -82,6 +82,12 @@ export const TAKE_MISSION = gql`
   ${USER_FIELDS}
 `;
 
+export const DELETE_MISSION = gql`
+  mutation DeleteMission($id: String!) {
+    deleteMission(id: $id)
+  }
+`;
+
 /* ───────────── Chat ───────────── */
 
 export const SEND_MESSAGE = gql`
@@ -121,6 +127,21 @@ export const UPDATE_STEP_STATUS = gql`
       status
     }
   }
+`;
+
+export const UPDATE_JUDGING_STEP = gql`
+  mutation UpdateJudgingStep($id: String!, $input: UpdateJudgingStepInput!) {
+    updateJudgingStep(id: $id, input: $input) {
+      id
+      title
+      status
+      order
+      judge {
+        ...UserFields
+      }
+    }
+  }
+  ${USER_FIELDS}
 `;
 
 /* ───────────── Notifications ───────────── */

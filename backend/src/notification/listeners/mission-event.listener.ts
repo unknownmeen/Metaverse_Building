@@ -24,7 +24,7 @@ export class MissionEventListener {
       where: { id: payload.missionId },
       select: { assigneeId: true },
     });
-    if (!mission) return;
+    if (!mission || mission.assigneeId == null) return;
     const text = this.getStatusUpdatedText(payload.newStatus);
     await this.notificationService.create({
       type: payload.newStatus === MissionStatus.NEEDS_FIX ? NotificationType.FIX : NotificationType.APPROVAL,

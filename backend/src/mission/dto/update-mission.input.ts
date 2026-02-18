@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsEnum, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsEnum, IsDateString, IsInt, MaxLength } from 'class-validator';
 import { Field, InputType } from '@nestjs/graphql';
 import { Transform } from 'class-transformer';
 import { Priority } from '@prisma/client';
@@ -32,4 +32,9 @@ export class UpdateMissionInput {
   @IsDateString({}, { message: 'فرمت تاریخ سررسید نامعتبر است' })
   @IsFutureDate()
   dueDate?: string;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  assigneeId?: number;
 }

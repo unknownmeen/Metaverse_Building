@@ -15,6 +15,32 @@ export interface UserFromJwt {
   role: UserRole;
 }
 
+const DEFAULT_JWT_EXPIRES_IN = '7d';
+
+function parseExpiresInToSeconds(value?: string): number {
+  const raw = (value || DEFAULT_JWT_EXPIRES_IN).trim();
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return Math.floor(numeric);
+  }
+
+  const match = raw.match(/^(\d+)\s*([smhd])$/i);
+  if (!match) {
+    return 7 * 24 * 60 * 60;
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  const multipliers: Record<string, number> = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    d: 24 * 60 * 60,
+  };
+
+  return amount * (multipliers[unit] || 1);
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -36,11 +62,12 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('نام کاربری یا رمز عبور اشتباه است');
     }
+    const expiresInConfig = process.env.JWT_EXPIRES_IN || DEFAULT_JWT_EXPIRES_IN;
     const payload: JwtPayload = { sub: user.id, phone: user.phone };
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken = this.jwtService.sign(payload, { expiresIn: expiresInConfig });
     return {
       accessToken,
-      expiresIn: 3600,
+      expiresIn: parseExpiresInToSeconds(expiresInConfig),
     };
   }
 

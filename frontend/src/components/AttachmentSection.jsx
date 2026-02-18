@@ -202,10 +202,10 @@ export default function AttachmentSection({ productId, missionId, readOnly = fal
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-80 p-5 mx-4 animate-scale-in" dir="rtl">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-sm font-bold text-slate-800">{t('common.add_link')}</h4>
+              <h4 className="text-sm font-bold text-slate-800 flex-1 text-center">{t('common.add_link')}</h4>
               <button
                 onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg flex-shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -217,8 +217,8 @@ export default function AttachmentSection({ productId, missionId, readOnly = fal
                   type="url"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder={t('common.enter_link')}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 transition-all placeholder:text-slate-300"
+                  placeholder={t('common.link_placeholder_example')}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 transition-all placeholder:text-slate-400"
                   dir="ltr"
                 />
               </div>
@@ -228,15 +228,15 @@ export default function AttachmentSection({ productId, missionId, readOnly = fal
                   value={linkName}
                   onChange={(e) => setLinkName(e.target.value)}
                   placeholder={t('common.link_name')}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 transition-all placeholder:text-slate-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:border-cyan-300 transition-all placeholder:text-slate-400"
                 />
               </div>
 
               {linkError && (
-                <p className="text-xs text-red-500">{linkError}</p>
+                <p className="text-xs text-red-500 text-center">{linkError}</p>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleAddLink}
                   disabled={uploading}

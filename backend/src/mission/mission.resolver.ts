@@ -6,8 +6,10 @@ import { MissionWriteService } from './mission-write.service';
 import { CreateMissionInput } from './dto/create-mission.input';
 import { UpdateMissionInput } from './dto/update-mission.input';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { MissionStatus } from '@prisma/client';
+import { MissionStatus, UserRole } from '@prisma/client';
 
 @Resolver(() => MissionEntity)
 export class MissionResolver {
@@ -38,12 +40,20 @@ export class MissionResolver {
   }
 
   @Mutation(() => MissionEntity)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async updateMission(
     @Args('id') id: string,
     @Args('input') input: UpdateMissionInput,
   ) {
     return this.missionWrite.update(id, input);
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async deleteMission(@Args('id') id: string) {
+    return this.missionWrite.delete(id);
   }
 
   @Mutation(() => MissionEntity)

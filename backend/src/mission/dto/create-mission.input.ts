@@ -31,9 +31,10 @@ export class CreateMissionInput {
   @IsFutureDate()
   dueDate: string;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsInt()
-  assigneeId: number;
+  assigneeId?: number;
 
   @Field()
   @IsString()
