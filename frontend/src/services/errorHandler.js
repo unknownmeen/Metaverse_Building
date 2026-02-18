@@ -6,8 +6,7 @@ import { tokenService } from './tokenService';
  * Known GraphQL error codes from Apollo/NestJS.
  */
 const AUTH_ERROR_CODES = ['UNAUTHENTICATED', 'UNAUTHORIZED'];
-const FORBIDDEN_CODES = ['FORBIDDEN'];
-const VALIDATION_CODES = ['BAD_USER_INPUT', 'BAD_REQUEST'];
+let redirectingToLogin = false;
 
 /**
  * Known backend error message substrings mapped to translation keys.
@@ -29,6 +28,20 @@ function isAuthError(graphQLErrors) {
     const code = err.extensions?.code;
     return AUTH_ERROR_CODES.includes(code);
   });
+}
+
+function isAuthNetworkError(networkError) {
+  if (!networkError) return false;
+  return (
+    networkError.statusCode === 401 ||
+    /unauthorized|unauthenticated|token|jwt.*expir|expired/i.test(networkError.message || '')
+  );
+}
+
+function redirectToLogin() {
+  if (redirectingToLogin) return;
+  redirectingToLogin = true;
+  window.location.href = '/login';
 }
 
 /**
@@ -85,12 +98,12 @@ function getNetworkErrorMessage(networkError) {
  * Global Apollo error handler.
  * Called automatically from the Apollo error link for every failed request.
  */
-export function handleApolloError({ graphQLErrors, networkError, operation }) {
+export function handleApolloError({ graphQLErrors, networkError }) {
   if (graphQLErrors) {
     if (isAuthError(graphQLErrors)) {
       tokenService.removeToken();
       toastService.error(t('errors.auth.token_expired'));
-      window.location.href = '/login';
+      redirectToLogin();
       return;
     }
 
@@ -101,6 +114,12 @@ export function handleApolloError({ graphQLErrors, networkError, operation }) {
   }
 
   if (networkError) {
+    if (isAuthNetworkError(networkError)) {
+      tokenService.removeToken();
+      toastService.error(t('errors.auth.token_expired'));
+      redirectToLogin();
+      return;
+    }
     const message = getNetworkErrorMessage(networkError);
     toastService.error(message);
   }
@@ -129,6 +148,13 @@ export function handleError(error, contextKey = null, { showToast = true } = {})
     const translated = getGraphQLErrorMessage(error.graphQLErrors);
     message = translated || (contextKey ? t(contextKey) : t('errors.unknown'));
   } else if (error?.networkError) {
+    if (isAuthNetworkError(error.networkError)) {
+      tokenService.removeToken();
+      message = t('errors.auth.token_expired');
+      if (showToast) toastService.error(message);
+      redirectToLogin();
+      return message;
+    }
     message = getNetworkErrorMessage(error.networkError);
   } else {
     message = contextKey ? t(contextKey) : t('errors.unknown');

@@ -18,8 +18,8 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
-  handleApolloError({ graphQLErrors, networkError, operation });
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  handleApolloError({ graphQLErrors, networkError });
 });
 
 export const apolloClient = new ApolloClient({

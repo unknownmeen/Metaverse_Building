@@ -1,5 +1,6 @@
 import { useApp } from '../context/AppContext';
 import { t } from '../services/i18n';
+import UserAvatar from './UserAvatar';
 
 const statusColors = {
   pending: '#94a3b8',
@@ -42,7 +43,7 @@ export default function MissionCard({ mission }) {
         </div>
         {assignee && (
           <div className="flex items-center gap-1.5">
-            <img src={assignee.avatar} alt="" className="w-4 h-4 rounded-full" />
+            <UserAvatar src={assignee.avatar} className="w-4 h-4" />
             <span className="text-[11px] text-slate-500">{assignee.name}</span>
           </div>
         )}

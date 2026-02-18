@@ -24,28 +24,57 @@ export class MissionWriteService {
 
   async create(input: CreateMissionInput, creatorId: number) {
     const id = `m-${uuidv4().slice(0, 8)}`;
-    return this.missionRepo.create({
+    const hasAssignee = input.assigneeId != null;
+    const status = hasAssignee ? MissionStatus.IN_PROGRESS : MissionStatus.PENDING;
+    const created = await this.missionRepo.create({
       id,
       title: input.title,
       description: input.description ?? '',
-      status: MissionStatus.PENDING,
+      status,
       priority: input.priority ?? 'NORMAL',
       dueDate: new Date(input.dueDate),
-      assigneeId: input.assigneeId,
+      assigneeId: input.assigneeId ?? null,
       productId: input.productId,
       creatorId,
     });
+    if (hasAssignee && input.assigneeId) {
+      this.eventEmitter.emit(MISSION_ASSIGNED, {
+        missionId: id,
+        previousAssigneeId: 0,
+        newAssigneeId: input.assigneeId,
+        assignedById: creatorId,
+      } as MissionAssignedEvent);
+    }
+    return created;
   }
 
   async update(id: string, input: UpdateMissionInput) {
     const existing = await this.missionRepo.findById(id);
     if (!existing) throw new NotFoundException('ماموریت یافت نشد');
-    const data: { title?: string; description?: string; priority?: Priority; dueDate?: Date } = {};
+    const data: { title?: string; description?: string; priority?: Priority; dueDate?: Date; assigneeId?: number; status?: MissionStatus } = {};
     if (input.title != null) data.title = input.title;
     if (input.description != null) data.description = input.description;
     if (input.priority != null) data.priority = input.priority;
     if (input.dueDate != null) data.dueDate = new Date(input.dueDate);
+    if (input.assigneeId != null) {
+      data.assigneeId = input.assigneeId;
+      if (existing.status === MissionStatus.PENDING) {
+        data.status = MissionStatus.IN_PROGRESS;
+      }
+      this.eventEmitter.emit(MISSION_ASSIGNED, {
+        missionId: id,
+        previousAssigneeId: existing.assigneeId,
+        newAssigneeId: input.assigneeId,
+        assignedById: input.assigneeId,
+      } as MissionAssignedEvent);
+    }
     return this.missionRepo.update(id, data);
+  }
+
+  async delete(id: string) {
+    const existing = await this.missionRepo.findById(id);
+    if (!existing) throw new NotFoundException('ماموریت یافت نشد');
+    return this.missionRepo.delete(id);
   }
 
   async updateStatus(id: string, newStatus: MissionStatus, userId: number) {
@@ -71,7 +100,7 @@ export class MissionWriteService {
     if (existing.status !== MissionStatus.PENDING) {
       throw new NotFoundException('این مأموریت قبلاً پذیرفته شده است');
     }
-    const previousAssigneeId = existing.assigneeId;
+    const previousAssigneeId = existing.assigneeId ?? 0;
     const updated = await this.missionRepo.updateAssigneeAndStatus(id, userId, MissionStatus.IN_PROGRESS);
 
     this.eventEmitter.emit(MISSION_ASSIGNED, {

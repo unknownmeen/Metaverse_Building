@@ -5,6 +5,7 @@ import { StepStatus } from '@prisma/client';
 import { JudgingRepository } from './judging.repository';
 import { StepStateMachine } from './state/step-state-machine';
 import { CreateJudgingStepInput } from './dto/create-judging-step.input';
+import { UpdateJudgingStepInput } from './dto/update-judging-step.input';
 import { JUDGING_STEP_UPDATED, JudgingStepUpdatedEvent } from '../common/events/judging.events';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -34,6 +35,15 @@ export class JudgingService {
       judgeId: input.judgeId,
       missionId: input.missionId,
     });
+  }
+
+  async update(stepId: string, input: UpdateJudgingStepInput) {
+    const step = await this.judgingRepo.findById(stepId);
+    if (!step) throw new NotFoundException('گام داوری یافت نشد');
+    const data: { title?: string; judgeId?: number } = {};
+    if (input.title != null) data.title = input.title;
+    if (input.judgeId != null) data.judgeId = input.judgeId;
+    return this.judgingRepo.update(stepId, data);
   }
 
   async updateStepStatus(stepId: string, newStatus: StepStatus, userId: number) {

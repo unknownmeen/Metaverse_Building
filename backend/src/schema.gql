@@ -52,7 +52,7 @@ input CreateJudgingStepInput {
 }
 
 input CreateMissionInput {
-  assigneeId: Float!
+  assigneeId: Float
   description: String! = ""
   dueDate: String!
   priority: Priority! = NORMAL
@@ -110,12 +110,14 @@ type Mutation {
   createMission(input: CreateMissionInput!): MissionEntity!
   createProduct(input: CreateProductInput!): ProductEntity!
   deleteAttachment(id: String!): Boolean!
+  deleteMission(id: String!): Boolean!
   deleteProduct(id: String!): Boolean!
   login(input: LoginInput!): AuthResponse!
   markAllNotificationsRead: Boolean!
   markNotificationRead(id: String!): Boolean!
   sendMessage(input: SendMessageInput!): ChatMessageEntity!
   takeMission(id: String!): MissionEntity!
+  updateJudgingStep(id: String!, input: UpdateJudgingStepInput!): JudgingStepEntity!
   updateMission(id: String!, input: UpdateMissionInput!): MissionEntity!
   updateMissionStatus(id: String!, status: MissionStatus!): MissionEntity!
   updateProduct(id: String!, input: UpdateProductInput!): ProductEntity!
@@ -188,7 +190,13 @@ enum StepStatus {
   WAITING_JUDGE
 }
 
+input UpdateJudgingStepInput {
+  judgeId: Float
+  title: String
+}
+
 input UpdateMissionInput {
+  assigneeId: Float
   description: String
   dueDate: String
   priority: Priority

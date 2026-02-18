@@ -19,7 +19,13 @@ async function bootstrap() {
   });
 
   const uploadsDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
-  app.useStaticAssets(uploadsDir, { prefix: '/uploads/' });
+  app.useStaticAssets(uploadsDir, {
+    prefix: '/uploads/',
+    maxAge: '7d',
+    immutable: false,
+    etag: true,
+    lastModified: true,
+  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

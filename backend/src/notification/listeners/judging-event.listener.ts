@@ -31,11 +31,12 @@ export class JudgingEventListener {
         type: NotificationType.APPROVAL,
         text: `گام «${step.title}» برای داوری ارسال شده است`,
         userId: step.judgeId,
-        senderId: mission.assigneeId,
+        senderId: mission.assigneeId ?? undefined,
         missionId: payload.missionId,
         stepId: payload.stepId,
       });
     } else if (payload.newStatus === StepStatus.APPROVED || payload.newStatus === StepStatus.NEEDS_FIX) {
+      if (mission.assigneeId == null) return;
       const text =
         payload.newStatus === StepStatus.APPROVED
           ? 'داور گام را تأیید کرد'

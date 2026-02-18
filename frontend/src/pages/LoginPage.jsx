@@ -7,6 +7,7 @@ import { LOGIN } from '../graphql/mutations';
 import { tokenService } from '../services/tokenService';
 import { toastService } from '../services/toastService';
 import { t } from '../services/i18n';
+import { toEnglishDigits, toPersianDigits } from '../lib/persianNumbers';
 
 export default function LoginPage() {
   const { fetchInitialData } = useApp();
@@ -20,7 +21,8 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!phone || !password) {
+    const normalizedPhone = toEnglishDigits(phone).replace(/\D/g, '');
+    if (!normalizedPhone || !password) {
       setError(t('errors.validation.required_fields'));
       return;
     }
@@ -29,12 +31,12 @@ export default function LoginPage() {
       setError('');
       const { data } = await loginMutation({
         variables: {
-          input: { phone, password },
+          input: { phone: normalizedPhone, password },
         },
       });
 
       if (data?.login?.accessToken) {
-        tokenService.setToken(data.login.accessToken);
+        tokenService.setToken(data.login.accessToken, data.login.expiresIn);
         const initialized = await fetchInitialData();
         if (!initialized) {
           setError(t('errors.auth.login_failed'));
@@ -55,21 +57,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-cyan-50 flex items-center justify-center p-4">
-      <div className="absolute top-10 right-10 w-72 h-72 bg-primary-200/30 rounded-full blur-3xl" />
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-cyan-200/30 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-amber-200/20 rounded-full blur-3xl" />
-
-      <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-3xl flex items-center justify-center shadow-xl shadow-primary-200 rotate-6">
-            <span className="text-3xl text-white font-black -rotate-6">{t('app.logo_letter')}</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-800 mb-1">{t('app.title')}</h1>
-          <p className="text-sm text-slate-500">{t('login.welcome')}</p>
+    <div className="min-h-screen flex bg-white">
+      {/* Right panel: Hero image (در RTL اولین ستون سمت راست است) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center pr-8 lg:pr-12">
+        <div className="w-full max-w-md aspect-[3/4] rounded-[2rem] overflow-hidden shadow-xl shrink-0 relative">
+          <img
+            src="/login-hero.png"
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
         </div>
+      </div>
 
-        <form onSubmit={handleLogin} className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 p-7 space-y-5 border border-white">
+      {/* Left panel: Login form */}
+      <div className="flex-1 min-h-screen flex items-center justify-start p-4 lg:p-6 lg:pr-8 xl:pr-12">
+        <div className="w-full max-w-sm">
+          <form onSubmit={handleLogin} className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-7 space-y-5 border border-slate-100">
           {error && (
             <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-xl border border-red-100 animate-fade-in">
               {error}
@@ -83,7 +86,11 @@ export default function LoginPage() {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => { setPhone(e.target.value); setError(''); }}
+                onChange={(e) => {
+                  const normalized = toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 11);
+                  setPhone(toPersianDigits(normalized));
+                  setError('');
+                }}
                 placeholder={t('login.phone_placeholder')}
                 className="w-full pr-12 pl-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-300 transition-all placeholder:text-slate-300"
                 dir="ltr"
@@ -132,10 +139,8 @@ export default function LoginPage() {
             )}
           </button>
 
-          <p className="text-center text-xs text-slate-400">
-            {t('login.initial_password_hint')}
-          </p>
         </form>
+        </div>
       </div>
     </div>
   );

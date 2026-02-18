@@ -195,18 +195,18 @@ export default function CreateSubProductDrawer() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-80 p-5 mx-4 animate-scale-in" dir="rtl">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-bold text-slate-800">{t('common.add_link')}</h4>
-                <button onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                <h4 className="text-sm font-bold text-slate-800 flex-1 text-center">{t('common.add_link')}</h4>
+                <button onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg flex-shrink-0">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="space-y-3">
-                <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder={t('common.enter_link')} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 transition-all placeholder:text-slate-300" dir="ltr" />
-                <input type="text" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder={t('common.link_name')} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 transition-all placeholder:text-slate-300" />
-                {linkError && <p className="text-xs text-red-500">{linkError}</p>}
-                <div className="flex gap-2">
-                  <button onClick={handleAddLink} className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-semibold text-sm transition-colors">{t('common.confirm')}</button>
-                  <button onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors">{t('common.cancel')}</button>
+                <input type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder={t('common.link_placeholder_example')} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 transition-all placeholder:text-slate-400" dir="ltr" />
+                <input type="text" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder={t('common.link_name')} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300 transition-all placeholder:text-slate-400" />
+                {linkError && <p className="text-xs text-red-500 text-center">{linkError}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button onClick={handleAddLink} className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center">{t('common.confirm')}</button>
+                  <button onClick={() => { setShowLinkModal(false); setLinkError(''); setLinkUrl(''); setLinkName(''); }} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors flex items-center justify-center">{t('common.cancel')}</button>
                 </div>
               </div>
             </div>

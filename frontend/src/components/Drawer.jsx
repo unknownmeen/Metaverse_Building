@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export default function Drawer({ open, onClose, title, children, width = 'max-w-md' }) {
+export default function Drawer({ open, onClose, title, children, width = 'max-w-md', headerActions = null }) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -30,12 +30,15 @@ export default function Drawer({ open, onClose, title, children, width = 'max-w-
       >
         <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-slate-100 px-5 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
+          <div className="flex items-center gap-1">
+            {headerActions}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-slate-500" />
+            </button>
+          </div>
         </div>
         <div className="p-5">
           {children}

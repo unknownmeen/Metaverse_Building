@@ -77,6 +77,8 @@ DATABASE_URL="postgresql://username:password@localhost:5432/metaverse_db?schema=
 
 # JWT
 JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+JWT_EXPIRES_IN="7d"
+JWT_CLOCK_TOLERANCE_SECONDS=30
 
 # Server
 PORT=3000
