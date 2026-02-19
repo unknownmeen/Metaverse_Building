@@ -25,12 +25,11 @@ export class MissionWriteService {
   async create(input: CreateMissionInput, creatorId: number) {
     const id = `m-${uuidv4().slice(0, 8)}`;
     const hasAssignee = input.assigneeId != null;
-    const status = hasAssignee ? MissionStatus.IN_PROGRESS : MissionStatus.PENDING;
     const created = await this.missionRepo.create({
       id,
       title: input.title,
       description: input.description ?? '',
-      status,
+      status: MissionStatus.PENDING,
       priority: input.priority ?? 'NORMAL',
       dueDate: new Date(input.dueDate),
       assigneeId: input.assigneeId ?? null,
@@ -58,9 +57,6 @@ export class MissionWriteService {
     if (input.dueDate != null) data.dueDate = new Date(input.dueDate);
     if (input.assigneeId != null) {
       data.assigneeId = input.assigneeId;
-      if (existing.status === MissionStatus.PENDING) {
-        data.status = MissionStatus.IN_PROGRESS;
-      }
       this.eventEmitter.emit(MISSION_ASSIGNED, {
         missionId: id,
         previousAssigneeId: existing.assigneeId,

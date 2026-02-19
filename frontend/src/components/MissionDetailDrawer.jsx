@@ -686,7 +686,7 @@ export default function MissionDetailDrawer() {
 
         <AttachmentSection missionId={mission.id} />
 
-        {mission.status === 'pending' && !editMode && !mission.assignee && (
+        {mission.status === 'pending' && !editMode && (
           <button
             onClick={handleTakeMission}
             disabled={taking}
