@@ -34,6 +34,7 @@ export class CreateMissionInput {
   @Field(() => Number, { nullable: true })
   @IsOptional()
   @IsInt()
+  @Transform(({ value }) => (value != null && value !== '' ? Number(value) : undefined))
   assigneeId?: number;
 
   @Field()
