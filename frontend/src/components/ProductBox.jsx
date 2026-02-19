@@ -1,9 +1,22 @@
-import { useState } from 'react';
-import { Info, Maximize2, FolderPlus, ListPlus, MoreHorizontal, FolderOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  Info,
+  Maximize2,
+  FolderPlus,
+  ListPlus,
+  MoreHorizontal,
+  FolderOpen,
+  Trash2,
+  Loader2,
+} from 'lucide-react';
+import { useMutation } from '@apollo/client/react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { t } from '../services/i18n';
 import { toPersianDigits } from '../lib/persianNumbers';
+import { DELETE_PRODUCT } from '../graphql/mutations';
+import { toastService } from '../services/toastService';
 import UserAvatar from './UserAvatar';
 
 const PRODUCT_BOX_ICON = '/product-box-icon.png';
@@ -131,8 +144,10 @@ function CollapsedChildrenTags({ children, dispatch }) {
 }
 
 export default function ProductBox({ product, depth = 0 }) {
-  const { state, dispatch } = useApp();
+  const { state, dispatch, refreshProducts } = useApp();
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteProduct, { loading: deleting }] = useMutation(DELETE_PRODUCT);
 
   const children = product.children || [];
   const d = Math.min(depth, 3);
@@ -159,6 +174,46 @@ export default function ProductBox({ product, depth = 0 }) {
     dispatch({ type: 'OPEN_CREATE_MISSION', parentId: product.id });
     setShowMenu(false);
   };
+
+  const isProductInSubtree = (node, targetId) => {
+    if (!node || !targetId) return false;
+    if (node.id === targetId) return true;
+    const nestedProducts = (node.children || []).filter((child) => child.type === 'product');
+    return nestedProducts.some((child) => isProductInSubtree(child, targetId));
+  };
+
+  const handleOpenDeleteConfirm = (event) => {
+    event.stopPropagation();
+    setShowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteSubProduct = async (event) => {
+    event.stopPropagation();
+    if (deleting || !product?.id || !product?.parentId) return;
+    try {
+      await deleteProduct({ variables: { id: product.id } });
+      const shouldNavigateToParent = isProductInSubtree(product, state.currentProductId);
+      const fallbackTarget = shouldNavigateToParent ? product.parentId : state.currentProductId;
+      setShowDeleteConfirm(false);
+      await refreshProducts();
+      if (fallbackTarget) {
+        dispatch({ type: 'NAVIGATE_TO_PRODUCT', productId: fallbackTarget });
+      }
+      toastService.success(t('success.product_deleted'));
+    } catch (error) {
+      const message =
+        error?.graphQLErrors?.[0]?.message || error?.message || t('errors.product.delete_failed');
+      toastService.error(message);
+    }
+  };
+
+  useEffect(() => {
+    if (showDeleteConfirm) document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showDeleteConfirm]);
 
   const sizeStyles = {
     0: 'p-5 min-h-[220px]',
@@ -276,6 +331,15 @@ export default function ProductBox({ product, depth = 0 }) {
                       <ListPlus className="w-4 h-4 text-amber-500" />
                       {t('mission.create')}
                     </button>
+                    {product.parentId && (
+                      <button
+                        onClick={handleOpenDeleteConfirm}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-slate-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {'\u062d\u0630\u0641 \u0632\u06cc\u0631 \u0645\u062d\u0635\u0648\u0644'}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -301,6 +365,65 @@ export default function ProductBox({ product, depth = 0 }) {
           <FolderOpen className="w-6 h-6 text-slate-200" />
         </div>
       )}
+      {showDeleteConfirm &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{
+              backgroundColor: 'rgba(15, 23, 42, 0.5)',
+              backdropFilter: 'blur(4px)',
+            }}
+            dir="rtl"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (!deleting && event.target === event.currentTarget) setShowDeleteConfirm(false);
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+            >
+              <div className="p-6">
+                <h4 className="text-lg font-bold text-slate-800 text-center mb-3">
+                  {t('product.delete_confirm_title')}
+                </h4>
+                <p className="text-sm text-slate-600 text-center leading-relaxed mb-6">
+                  {t('product.delete_confirm')}
+                </p>
+                <div className="flex gap-3 flex-row-reverse">
+                  <button
+                    onClick={handleDeleteSubProduct}
+                    disabled={deleting}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    {deleting ? t('common.submitting') : t('product.delete_action')}
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowDeleteConfirm(false);
+                    }}
+                    disabled={deleting}
+                    className="flex-1 flex items-center justify-center py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors disabled:opacity-70 border border-slate-200"
+                  >
+                    {t('common.cancel_short')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

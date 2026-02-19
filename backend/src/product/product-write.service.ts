@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { ProductRepository } from './product.repository';
 import { CreateProductInput } from './dto/create-product.input';
@@ -21,7 +21,8 @@ export class ProductWriteService {
   }
 
   async update(id: string, input: UpdateProductInput) {
-    await this.productRepo.findById(id);
+    const product = await this.productRepo.findById(id);
+    if (!product) throw new NotFoundException('Product not found');
     return this.productRepo.update(id, {
       title: input.title,
       description: input.description,
@@ -29,7 +30,9 @@ export class ProductWriteService {
   }
 
   async delete(id: string) {
-    await this.productRepo.findById(id);
+    const product = await this.productRepo.findById(id);
+    if (!product) throw new NotFoundException('Product not found');
+    if (!product.parentId) throw new BadRequestException('Root product cannot be deleted');
     return this.productRepo.delete(id);
   }
 }
