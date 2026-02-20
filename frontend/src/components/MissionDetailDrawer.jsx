@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Calendar,
   Clock,
@@ -54,6 +54,24 @@ function missionSyncSignature(mission) {
   });
 }
 
+const CHAT_POLLING = Object.freeze({
+  activeMs: 2500,
+  idleMs: 6000,
+  hiddenMs: 15000,
+  idleAfterMs: 30000,
+  maxBackoffMs: 30000,
+});
+
+function getChatPollInterval({ isHidden, isIdle, errorStreak }) {
+  const baseMs = isHidden
+    ? CHAT_POLLING.hiddenMs
+    : isIdle
+      ? CHAT_POLLING.idleMs
+      : CHAT_POLLING.activeMs;
+  if (!errorStreak) return baseMs;
+  return Math.min(baseMs * (errorStreak + 1), CHAT_POLLING.maxBackoffMs);
+}
+
 function ChatSection({ mission, step }) {
   const { state } = useApp();
   const [message, setMessage] = useState('');
@@ -61,13 +79,16 @@ function ChatSection({ mission, step }) {
   const [localMessages, setLocalMessages] = useState([]);
   const chatFileRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const pollTimeoutRef = useRef(null);
+  const inFlightRef = useRef(false);
+  const errorStreakRef = useRef(0);
+  const lastInteractionAtRef = useRef(Date.now());
 
   const { data, loading: loadingMessages, refetch } = useQuery(GET_CHAT_MESSAGES, {
     variables: { missionId: mission.id, stepId: step.id },
     skip: !mission.id || !step?.id,
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-first',
-    pollInterval: mission?.id && step?.id ? 4000 : 0,
   });
 
   const [sendMessage, { loading: sending }] = useMutation(SEND_MESSAGE);
@@ -87,6 +108,94 @@ function ChatSection({ mission, step }) {
     return merged;
   }, [serverMessages, localMessages]);
   const showInitialLoading = loadingMessages && serverMessages.length === 0 && localMessages.length === 0;
+
+  const syncMessages = useCallback(async () => {
+    if (!mission?.id || !step?.id || inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await refetch();
+      errorStreakRef.current = 0;
+    } catch {
+      errorStreakRef.current += 1;
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [mission?.id, step?.id, refetch]);
+
+  useEffect(() => {
+    if (!mission?.id || !step?.id) return undefined;
+
+    let disposed = false;
+
+    const clearPollTimer = () => {
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+        pollTimeoutRef.current = null;
+      }
+    };
+
+    const schedulePoll = () => {
+      clearPollTimer();
+      const inactiveFor = Date.now() - lastInteractionAtRef.current;
+      const pollMs = getChatPollInterval({
+        isHidden: document.hidden,
+        isIdle: inactiveFor >= CHAT_POLLING.idleAfterMs,
+        errorStreak: errorStreakRef.current,
+      });
+      pollTimeoutRef.current = setTimeout(async () => {
+        if (disposed) return;
+        await syncMessages();
+        schedulePoll();
+      }, pollMs);
+    };
+
+    const markInteraction = () => {
+      lastInteractionAtRef.current = Date.now();
+    };
+
+    const onVisibilityChange = async () => {
+      if (!document.hidden) {
+        markInteraction();
+        await syncMessages();
+      }
+      schedulePoll();
+    };
+
+    const onFocus = async () => {
+      markInteraction();
+      await syncMessages();
+      schedulePoll();
+    };
+
+    const onUserInteraction = () => {
+      markInteraction();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('pointerdown', onUserInteraction);
+    window.addEventListener('keydown', onUserInteraction);
+
+    schedulePoll();
+
+    return () => {
+      disposed = true;
+      clearPollTimer();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pointerdown', onUserInteraction);
+      window.removeEventListener('keydown', onUserInteraction);
+    };
+  }, [mission?.id, step?.id, syncMessages]);
+
+  useEffect(() => {
+    if (!serverMessages.length || !localMessages.length) return;
+    const serverIds = new Set(serverMessages.map((msg) => msg.id));
+    setLocalMessages((prev) => {
+      const filtered = prev.filter((msg) => !serverIds.has(msg.id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [serverMessages, localMessages.length]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -113,7 +222,6 @@ function ChatSection({ mission, step }) {
         }
       }
       setMessage('');
-      refetch();
     } catch (error) {
       const msg = error?.graphQLErrors?.[0]?.message || error?.message || t('errors.chat.send_failed');
       toastService.error(msg);
@@ -143,7 +251,6 @@ function ChatSection({ mission, step }) {
           setLocalMessages((prev) => [...prev.filter((m) => m.id !== created.id), created]);
         }
       }
-      refetch();
     } catch (error) {
       const msg = error?.graphQLErrors?.[0]?.message || error?.message || t('errors.chat.send_failed');
       toastService.error(msg);

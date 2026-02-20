@@ -11,7 +11,7 @@ import {
 } from '../graphql/adapters';
 
 const AppContext = createContext();
-const PRODUCTS_POLL_MS = 7000;
+const PRODUCTS_POLL_MS = 60000;
 const NOTIFICATIONS_POLL_MS = 4000;
 
 /* ───────────── Tree Traversal Helpers ───────────── */
@@ -260,78 +260,91 @@ export function AppProvider({ children }) {
   const refreshingProductsRef = useRef(false);
   const refreshingNotificationsRef = useRef(false);
   const previousUnreadCountRef = useRef(null);
+  const initialDataPromiseRef = useRef(null);
 
   /**
    * Fetch all initial data from the API after authentication.
    * Runs core queries for all users and admin-only queries conditionally.
    */
   const fetchInitialData = useCallback(async () => {
-    let isSuccess = false;
-    try {
-      dispatch({ type: 'SET_LOADING', loading: true });
-
-      const meResult = await client.query({ query: ME });
-      const currentUser = meResult.data?.me ? transformUser(meResult.data.me) : null;
-      if (!currentUser) {
-        throw new Error('Failed to fetch authenticated user profile');
-      }
-      dispatch({ type: 'SET_AUTH_DATA', user: currentUser });
-
-      const usersPromise =
-        currentUser.role === 'admin'
-          ? client.query({ query: GET_USERS }).catch((error) => {
-              console.warn('Failed to fetch users list:', error);
-              return null;
-            })
-          : Promise.resolve(null);
-
-      const [productsResult, notificationsResult, usersResult] = await Promise.all([
-        client.query({ query: PRODUCT_TREE }),
-        client.query({ query: GET_NOTIFICATIONS }).catch((error) => {
-          console.warn('Failed to fetch notifications:', error);
-          return null;
-        }),
-        usersPromise,
-      ]);
-
-      const transformedProducts = productsResult.data?.productTree
-        ? transformProductTree(productsResult.data.productTree)
-        : null;
-      const derivedUsers = deriveUsersFromProducts(transformedProducts, currentUser);
-
-      if (currentUser.role === 'admin') {
-        const apiUsers = usersResult?.data?.users ? transformUsers(usersResult.data.users) : [];
-        dispatch({ type: 'SET_USERS', users: mergeUsers(apiUsers, derivedUsers) });
-      } else {
-        dispatch({ type: 'SET_USERS', users: derivedUsers });
-      }
-
-      if (transformedProducts) {
-        dispatch({
-          type: 'SET_PRODUCTS',
-          products: transformedProducts,
-        });
-      }
-
-      if (notificationsResult?.data?.notifications) {
-        const transformed = transformNotifications(notificationsResult.data.notifications);
-        previousUnreadCountRef.current = transformed.filter((n) => !n.read).length;
-        dispatch({
-          type: 'SET_NOTIFICATIONS',
-          notifications: transformed,
-        });
-      }
-      isSuccess = true;
-    } catch (error) {
-      console.error('Failed to fetch initial data:', error);
-      if (tokenService.isTokenExpired() || isAuthFailure(error)) {
-        tokenService.removeToken();
-        dispatch({ type: 'LOGOUT' });
-      }
-    } finally {
-      dispatch({ type: 'SET_LOADING', loading: false });
+    if (initialDataPromiseRef.current) {
+      return initialDataPromiseRef.current;
     }
-    return isSuccess;
+
+    initialDataPromiseRef.current = (async () => {
+      let isSuccess = false;
+      try {
+        dispatch({ type: 'SET_LOADING', loading: true });
+
+        const meResult = await client.query({ query: ME });
+        const currentUser = meResult.data?.me ? transformUser(meResult.data.me) : null;
+        if (!currentUser) {
+          throw new Error('Failed to fetch authenticated user profile');
+        }
+        dispatch({ type: 'SET_AUTH_DATA', user: currentUser });
+
+        const usersPromise =
+          currentUser.role === 'admin'
+            ? client.query({ query: GET_USERS }).catch((error) => {
+                console.warn('Failed to fetch users list:', error);
+                return null;
+              })
+            : Promise.resolve(null);
+
+        const [productsResult, notificationsResult, usersResult] = await Promise.all([
+          client.query({ query: PRODUCT_TREE }),
+          client.query({ query: GET_NOTIFICATIONS }).catch((error) => {
+            console.warn('Failed to fetch notifications:', error);
+            return null;
+          }),
+          usersPromise,
+        ]);
+
+        const transformedProducts = productsResult.data?.productTree
+          ? transformProductTree(productsResult.data.productTree)
+          : null;
+        const derivedUsers = deriveUsersFromProducts(transformedProducts, currentUser);
+
+        if (currentUser.role === 'admin') {
+          const apiUsers = usersResult?.data?.users ? transformUsers(usersResult.data.users) : [];
+          dispatch({ type: 'SET_USERS', users: mergeUsers(apiUsers, derivedUsers) });
+        } else {
+          dispatch({ type: 'SET_USERS', users: derivedUsers });
+        }
+
+        if (transformedProducts) {
+          dispatch({
+            type: 'SET_PRODUCTS',
+            products: transformedProducts,
+          });
+        }
+
+        if (notificationsResult?.data?.notifications) {
+          const transformed = transformNotifications(notificationsResult.data.notifications);
+          previousUnreadCountRef.current = transformed.filter((n) => !n.read).length;
+          dispatch({
+            type: 'SET_NOTIFICATIONS',
+            notifications: transformed,
+          });
+        }
+        isSuccess = true;
+      } catch (error) {
+        console.error('Failed to fetch initial data:', error);
+        if (tokenService.isTokenExpired() || isAuthFailure(error)) {
+          tokenService.removeToken();
+          dispatch({ type: 'LOGOUT' });
+        }
+      } finally {
+        dispatch({ type: 'SET_LOADING', loading: false });
+      }
+      return isSuccess;
+    })();
+
+    try {
+      return await initialDataPromiseRef.current;
+    } finally {
+      initialDataPromiseRef.current = null;
+    }
   }, [client]);
 
   useEffect(() => {
@@ -350,8 +363,6 @@ export function AppProvider({ children }) {
     if (refreshingProductsRef.current || !tokenService.isAuthenticated()) return;
     try {
       refreshingProductsRef.current = true;
-      client.cache.evict({ fieldName: 'productTree' });
-      client.cache.gc();
       const { data } = await client.query({
         query: PRODUCT_TREE,
         fetchPolicy: 'network-only',
@@ -431,7 +442,6 @@ export function AppProvider({ children }) {
 
     document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('focus', onFocus);
-    syncNow();
 
     return () => {
       isStopped = true;

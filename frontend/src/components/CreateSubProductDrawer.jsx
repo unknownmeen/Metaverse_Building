@@ -4,7 +4,6 @@ import { useMutation } from '@apollo/client/react';
 import Drawer from './Drawer';
 import { useApp } from '../context/AppContext';
 import { CREATE_PRODUCT, CREATE_ATTACHMENT } from '../graphql/mutations';
-import { PRODUCT_TREE } from '../graphql/queries';
 import { uploadFile, isValidUrl } from '../services/uploadService';
 import { t } from '../services/i18n';
 import { LIMITS, charsRemaining } from '../lib/validation';
@@ -23,10 +22,7 @@ export default function CreateSubProductDrawer() {
   const [linkError, setLinkError] = useState('');
   const fileInputRef = useRef(null);
 
-  const [createProduct] = useMutation(CREATE_PRODUCT, {
-    refetchQueries: [{ query: PRODUCT_TREE }],
-    awaitRefetchQueries: true,
-  });
+  const [createProduct] = useMutation(CREATE_PRODUCT);
   const [createAttachment] = useMutation(CREATE_ATTACHMENT);
 
   const handleFileSelect = async (e) => {
