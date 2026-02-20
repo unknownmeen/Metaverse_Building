@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, HelpCircle, ChevronLeft } from 'lucide-react';
+import { Bell, HelpCircle, ChevronLeft, CheckCheck } from 'lucide-react';
 import { useMutation } from '@apollo/client/react';
 import { useApp } from '../context/AppContext';
-import { MARK_NOTIFICATION_READ as MARK_READ_MUTATION } from '../graphql/mutations';
+import { unlockAudio } from '../services/notificationSoundService';
+import { MARK_NOTIFICATION_READ as MARK_READ_MUTATION, MARK_ALL_NOTIFICATIONS_READ } from '../graphql/mutations';
 import { MISSION_STATUS } from '../data/mockData';
 import { t } from '../services/i18n';
 import { toPersianDigits } from '../lib/persianNumbers';
@@ -13,6 +14,7 @@ function NotificationDropdown({ open, onClose }) {
   const { state, dispatch, getMissionById, getProductContainingMission } = useApp();
   const ref = useRef(null);
   const [markRead] = useMutation(MARK_READ_MUTATION);
+  const [markAllRead, { loading: markingAll }] = useMutation(MARK_ALL_NOTIFICATIONS_READ);
 
   useEffect(() => {
     function handleClick(event) {
@@ -54,13 +56,38 @@ function NotificationDropdown({ open, onClose }) {
     }
   };
 
+  const handleMarkAllRead = async () => {
+    if (markingAll || state.notifications.every((n) => n.read)) return;
+    try {
+      dispatch({ type: 'MARK_ALL_NOTIFICATIONS_READ' });
+      await markAllRead();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const hasUnread = state.notifications.some((n) => !n.read);
+
   return (
     <div
       ref={ref}
       className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-scale-in z-50"
     >
-      <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-l from-primary-50 to-white">
+      <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-l from-primary-50 to-white flex items-center justify-between gap-3">
         <h3 className="font-bold text-slate-800 text-right">{t('notifications.title')}</h3>
+        <button
+          type="button"
+          onClick={handleMarkAllRead}
+          disabled={markingAll}
+          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50 text-xs font-medium ${
+            hasUnread
+              ? 'text-primary-500 hover:bg-primary-50 hover:text-primary-600 cursor-pointer'
+              : 'text-slate-400 cursor-default'
+          }`}
+        >
+          <CheckCheck className="w-4 h-4" />
+          <span>{t('notifications.read_all')}</span>
+        </button>
       </div>
       <div className="max-h-80 overflow-y-auto">
         {state.notifications.length === 0 ? (
@@ -172,6 +199,7 @@ export default function TopBar() {
           <div className="relative">
             <button
               onClick={() => {
+                unlockAudio();
                 setShowNotif(!showNotif);
                 setShowHelp(false);
               }}

@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useEffect, useRef }
 import { useApolloClient } from '@apollo/client/react';
 import { PRODUCT_TREE, ME, GET_USERS, GET_NOTIFICATIONS } from '../graphql/queries';
 import { tokenService } from '../services/tokenService';
+import { playNotificationSound } from '../services/notificationSoundService';
 import {
   transformProductTree,
   transformUser,
@@ -240,6 +241,12 @@ function reducer(state, action) {
         ),
       };
 
+    case 'MARK_ALL_NOTIFICATIONS_READ':
+      return {
+        ...state,
+        notifications: state.notifications.map((n) => ({ ...n, read: true })),
+      };
+
     default:
       return state;
   }
@@ -252,6 +259,7 @@ export function AppProvider({ children }) {
   const client = useApolloClient();
   const refreshingProductsRef = useRef(false);
   const refreshingNotificationsRef = useRef(false);
+  const previousUnreadCountRef = useRef(null);
 
   /**
    * Fetch all initial data from the API after authentication.
@@ -306,9 +314,11 @@ export function AppProvider({ children }) {
       }
 
       if (notificationsResult?.data?.notifications) {
+        const transformed = transformNotifications(notificationsResult.data.notifications);
+        previousUnreadCountRef.current = transformed.filter((n) => !n.read).length;
         dispatch({
           type: 'SET_NOTIFICATIONS',
-          notifications: transformNotifications(notificationsResult.data.notifications),
+          notifications: transformed,
         });
       }
       isSuccess = true;
@@ -361,6 +371,7 @@ export function AppProvider({ children }) {
 
   /**
    * Refresh notifications from the server.
+   * Plays a dialing sound when new unread notifications arrive.
    */
   const refreshNotifications = useCallback(async () => {
     if (refreshingNotificationsRef.current || !tokenService.isAuthenticated()) return;
@@ -371,9 +382,16 @@ export function AppProvider({ children }) {
         fetchPolicy: 'network-only',
       });
       if (data?.notifications) {
+        const transformed = transformNotifications(data.notifications);
+        const newUnreadCount = transformed.filter((n) => !n.read).length;
+        const prevUnread = previousUnreadCountRef.current;
+        if (prevUnread != null && newUnreadCount > prevUnread && !document.hidden) {
+          playNotificationSound();
+        }
+        previousUnreadCountRef.current = newUnreadCount;
         dispatch({
           type: 'SET_NOTIFICATIONS',
-          notifications: transformNotifications(data.notifications),
+          notifications: transformed,
         });
       }
     } catch (error) {

@@ -10,7 +10,7 @@ import { toastService } from '../services/toastService';
 import { t } from '../services/i18n';
 
 export default function ProductInfoDrawer() {
-  const { state, dispatch, refreshProducts } = useApp();
+  const { state, dispatch, refreshProducts, refreshNotifications } = useApp();
   const product = state.selectedProductForInfo;
 
   const [editMode, setEditMode] = useState(false);
@@ -72,7 +72,7 @@ export default function ProductInfoDrawer() {
       await deleteProduct({ variables: { id: product.id } });
       setShowDeleteConfirm(false);
       dispatch({ type: 'CLOSE_PRODUCT_INFO_DRAWER' });
-      await refreshProducts();
+      await Promise.all([refreshProducts(), refreshNotifications()]);
       dispatch({ type: 'NAVIGATE_TO_PRODUCT', productId: product.parentId });
       toastService.success(t('success.product_deleted'));
     } catch {

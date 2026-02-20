@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from './graphql/client';
 import { AppProvider, useApp } from './context/AppContext';
+import { unlockAudio } from './services/notificationSoundService';
 import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/Toast';
 import Layout from './components/Layout';
@@ -59,12 +61,28 @@ function AppRoutes() {
   );
 }
 
+function AudioUnlock() {
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <ApolloProvider client={apolloClient}>
       <ToastProvider>
         <BrowserRouter>
           <AppProvider>
+            <AudioUnlock />
             <AppRoutes />
             <ToastContainer />
           </AppProvider>

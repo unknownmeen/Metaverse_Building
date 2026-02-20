@@ -144,7 +144,7 @@ function CollapsedChildrenTags({ children, dispatch }) {
 }
 
 export default function ProductBox({ product, depth = 0 }) {
-  const { state, dispatch, refreshProducts } = useApp();
+  const { state, dispatch, refreshProducts, refreshNotifications } = useApp();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteProduct, { loading: deleting }] = useMutation(DELETE_PRODUCT);
@@ -196,7 +196,7 @@ export default function ProductBox({ product, depth = 0 }) {
       const shouldNavigateToParent = isProductInSubtree(product, state.currentProductId);
       const fallbackTarget = shouldNavigateToParent ? product.parentId : state.currentProductId;
       setShowDeleteConfirm(false);
-      await refreshProducts();
+      await Promise.all([refreshProducts(), refreshNotifications()]);
       if (fallbackTarget) {
         dispatch({ type: 'NAVIGATE_TO_PRODUCT', productId: fallbackTarget });
       }

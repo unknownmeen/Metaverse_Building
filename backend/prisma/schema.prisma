@@ -146,7 +146,7 @@ model Notification {
 
   recipient User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   sender    User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
-  mission   Mission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  mission   Mission? @relation(fields: [missionId], references: [id], onDelete: Cascade)
 }
 
 model Attachment {

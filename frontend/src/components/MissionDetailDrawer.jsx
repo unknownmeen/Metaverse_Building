@@ -154,12 +154,12 @@ function ChatSection({ mission, step }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-slate-100">
-      <div className="px-4 py-3 bg-gradient-to-l from-primary-50 to-slate-50 border-b border-slate-100">
+    <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 flex flex-col min-h-0">
+      <div className="px-4 py-3 bg-gradient-to-l from-primary-50 to-slate-50 border-b border-slate-100 flex-shrink-0">
         <h4 className="text-sm font-bold text-slate-700">{t('chat.title')}</h4>
       </div>
 
-      <div ref={messagesContainerRef} className="h-56 overflow-y-auto p-3 space-y-3">
+      <div ref={messagesContainerRef} className="min-h-[180px] sm:min-h-[224px] max-h-[40vh] sm:max-h-[280px] overflow-y-auto p-3 space-y-3 flex-1">
         {showInitialLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -186,7 +186,7 @@ function ChatSection({ mission, step }) {
                     <p className={`text-[11px] font-semibold mb-1 ${isMe ? 'text-primary-100' : 'text-slate-400'}`}>
                       {sender?.name}
                     </p>
-                    <span className="break-words break-all">{msg.text}</span>
+                    <span className="break-words whitespace-pre-wrap">{msg.text}</span>
                     {msg.file && (
                       <a
                         href={msg.file.url}
@@ -212,13 +212,14 @@ function ChatSection({ mission, step }) {
         )}
       </div>
 
-      <div className="p-3 border-t border-slate-100 bg-white">
-        <div className="flex items-center gap-2">
+      <div className="p-3 border-t border-slate-100 bg-white flex-shrink-0">
+        <div className="flex items-center gap-2 w-full">
           <input ref={chatFileRef} type="file" className="hidden" onChange={handleChatFileUpload} />
           <button
             onClick={() => chatFileRef.current?.click()}
             disabled={uploadingChat || sending}
-            className="p-2 text-slate-400 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50"
+            className="flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50 touch-manipulation"
+            aria-label={t('chat.attach')}
           >
             {uploadingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
           </button>
@@ -228,16 +229,17 @@ function ChatSection({ mission, step }) {
             onChange={(event) => setMessage(event.target.value.slice(0, LIMITS.CHAT_MESSAGE_MAX))}
             placeholder={t('chat.placeholder')}
             maxLength={LIMITS.CHAT_MESSAGE_MAX}
-            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-all placeholder:text-slate-300"
+            className="flex-1 min-w-0 px-4 py-3 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 transition-all placeholder:text-slate-300"
             onKeyDown={(event) => event.key === 'Enter' && handleSend()}
             disabled={sending || uploadingChat}
           />
           <button
             onClick={handleSend}
-            disabled={sending || uploadingChat}
-            className="p-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50"
+            disabled={sending || uploadingChat || !message.trim()}
+            className="flex-shrink-0 min-w-[44px] min-h-[44px] w-11 h-11 sm:w-auto sm:h-auto sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center p-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100 touch-manipulation"
+            aria-label={t('chat.send')}
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {sending ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Send className="w-5 h-5 sm:w-4 sm:h-4" />}
           </button>
         </div>
       </div>
@@ -470,7 +472,7 @@ export default function MissionDetailDrawer() {
     try {
       await deleteMission({ variables: { id: mission.id } });
       setShowDeleteConfirm(false);
-      await refreshProducts();
+      await Promise.all([refreshProducts(), refreshNotifications()]);
       dispatch({ type: 'CLOSE_MISSION_DRAWER' });
       toastService.success(t('success.mission_deleted'));
     } catch (error) {
