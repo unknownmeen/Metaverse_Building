@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. سرویس دیتابیس (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: mvp_db
+    restart: always
+    environment:
+      POSTGRES_USER: mvp_user
+      POSTGRES_PASSWORD: mvp_password
+      POSTGRES_DB: mvp_database
+    volumes:
+      # ذخیره دائمی اطلاعات دیتابیس روی هارد سرور
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # محدود کردن دسترسی فقط به داخل سرور (امنیت بالا)
+      - "127.0.0.1:5432:5432"
+
+  # 2. سرویس بک‌اند (NestJS)
+  backend:
+    build:
+      context: ./backend
+    container_name: mvp_backend
+    restart: always
+    environment:
+      # اتصال اتوماتیک بک‌اند به دیتابیس داکر
+      DATABASE_URL: postgresql://mvp_user:mvp_password@db:5432/mvp_database?schema=public
+      PORT: 4000
+    volumes:
+      # ذخیره دائمی فایل‌های آپلودی کاربران تا با آپدیت سایت پاک نشوند
+      - backend_uploads:/app/uploads
+    ports:
+      # بک‌اند روی پورت 4000 سرور بالا می‌آید اما فقط برای ارتباطات داخلی
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      - db
+
+  # 3. سرویس فرانت‌اند (React/Vite + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: mvp_frontend
+    restart: always
+    ports:
+      # مپ کردن پورت 80 کانتینر به پورت 3000 سرور اصلی
+      - "127.0.0.1:3000:80"
+    depends_on:
+      - backend
+
+# تعریف فضاهای ذخیره‌سازی دائمی (Volumes)
+volumes:
+  postgres_data:
+  backend_uploads:
