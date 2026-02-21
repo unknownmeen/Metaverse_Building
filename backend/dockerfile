@@ -35,8 +35,7 @@
     # این بار فقط وابستگی‌های اصلی (بدون پکیج‌های توسعه) نصب می‌شوند
     RUN npm ci --omit=dev --legacy-peer-deps    
     # ساخت مجدد کلاینت پریزما برای محیط پروداکشن
-    RUN npx prisma generate
-    
+    RUN npx prisma@5.22.0 generate    
     # کپی کردن پوشه کامپایل‌شده (dist) از مرحله قبل
     COPY --from=builder /app/dist ./dist
     
