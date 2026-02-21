@@ -4,8 +4,6 @@ FROM node:20-alpine
 # ۱. نصب کتابخانه‌های سیستمی (برای حل ارور libssl و سازگاری با پریزما)
 RUN apk add --no-cache openssl libc6-compat
 
-# ۲. تنظیم متغیر محیطی پروداکشن برای بهینه‌سازی اجرا
-ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -26,6 +24,8 @@ RUN npx prisma@5.22.0 generate
 
 # ۷. بیلد گرفتن از پروژه
 RUN npm run build
+# ۲. تنظیم متغیر محیطی پروداکشن برای بهینه‌سازی اجرا
+ENV NODE_ENV=production
 
 # باز کردن پورت بک‌اند
 EXPOSE 4000
