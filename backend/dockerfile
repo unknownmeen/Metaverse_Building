@@ -9,8 +9,7 @@
     COPY prisma ./prisma/
     
     # نصب تمام وابستگی‌ها (حتی devDependencies برای بیلد گرفتن)
-    RUN npm ci
-    
+    RUN npm ci --legacy-peer-deps    
     # کپی کردن کل سورس‌کد
     COPY . .
     
@@ -34,8 +33,7 @@
     COPY prisma ./prisma/
     
     # این بار فقط وابستگی‌های اصلی (بدون پکیج‌های توسعه) نصب می‌شوند
-    RUN npm ci --only=production
-    
+    RUN npm ci --omit=dev --legacy-peer-deps    
     # ساخت مجدد کلاینت پریزما برای محیط پروداکشن
     RUN npx prisma generate
     
