@@ -4,12 +4,12 @@ services:
   # 1. سرویس دیتابیس (PostgreSQL)
   db:
     image: postgres:15-alpine
-    container_name: mvp_db
+    container_name: jrm_db
     restart: always
     environment:
-      POSTGRES_USER: mvp_user
-      POSTGRES_PASSWORD: mvp_password
-      POSTGRES_DB: mvp_database
+      POSTGRES_USER: jrm_user
+      POSTGRES_PASSWORD: jrm_password
+      POSTGRES_DB: jrm_database
     volumes:
       # ذخیره دائمی اطلاعات دیتابیس روی هارد سرور
       - postgres_data:/var/lib/postgresql/data
@@ -21,11 +21,11 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: mvp_backend
+    container_name: jrm_backend
     restart: always
     environment:
       # اتصال اتوماتیک بک‌اند به دیتابیس داکر
-      DATABASE_URL: postgresql://mvp_user:mvp_password@db:5432/mvp_database?schema=public
+      DATABASE_URL: postgresql://jrm_user:jrm_password@db:5432/jrm_database?schema=public
       PORT: 4000
     volumes:
       # ذخیره دائمی فایل‌های آپلودی کاربران تا با آپدیت سایت پاک نشوند
@@ -40,7 +40,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    container_name: mvp_frontend
+    container_name: jrm_frontend
     restart: always
     ports:
       # مپ کردن پورت 80 کانتینر به پورت 3000 سرور اصلی
