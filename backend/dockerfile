@@ -1,46 +1,35 @@
-# ----- Stage 1: Builder (مرحله ساخت و کامپایل) -----
-    FROM node:20-alpine AS builder
+# استفاده از نسخه پایدار نود
+FROM node:20-alpine
 
-    # تنظیم پوشه کاری داخل کانتینر
-    WORKDIR /app
-    
-    # کپی کردن فایل‌های پکیج برای نصب وابستگی‌ها
-    COPY package*.json ./
-    COPY prisma ./prisma/
-    
-    # نصب تمام وابستگی‌ها (حتی devDependencies برای بیلد گرفتن)
-    RUN npm ci --legacy-peer-deps    
-    # کپی کردن کل سورس‌کد
-    COPY . .
-    
-    # ساخت کلاینت پریزما (بسیار مهم برای ارتباط با دیتابیس)
-    RUN npx prisma generate
-    
-    # بیلد گرفتن از پروژه NestJS
-    RUN npm run build
-    
-    
-    # ----- Stage 2: Production (مرحله نهایی و اجرای سبک) -----
-    FROM node:20-alpine AS production
-    
-    WORKDIR /app
-    
-    # تنظیم متغیر محیطی روی پروداکشن برای امنیت و سرعت بیشتر
-    ENV NODE_ENV=production
-    
-    # کپی کردن فایل‌های پکیج
-    COPY package*.json ./
-    COPY prisma ./prisma/
-    
-    # این بار فقط وابستگی‌های اصلی (بدون پکیج‌های توسعه) نصب می‌شوند
-    RUN npm ci --omit=dev --legacy-peer-deps    
-    # ساخت مجدد کلاینت پریزما برای محیط پروداکشن
-    RUN npx prisma@5.22.0 generate    
-    # کپی کردن پوشه کامپایل‌شده (dist) از مرحله قبل
-    COPY --from=builder /app/dist ./dist
-    
-    # باز کردن پورت 4000 (پورت استاندارد بک‌اند شما که در فایروال هم باز بود)
-    EXPOSE 4000
-    
-    # دستور نهایی برای روشن کردن سرور NestJS
-    CMD ["npm", "run", "start:prod"]
+# ۱. نصب کتابخانه‌های سیستمی (برای حل ارور libssl و سازگاری با پریزما)
+RUN apk add --no-cache openssl libc6-compat
+
+# ۲. تنظیم متغیر محیطی پروداکشن برای بهینه‌سازی اجرا
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# ۳. استراتژی ککش: اول فقط فایل‌های پکیج را کپی می‌کنیم
+# تا زمانی که لیست پکیج‌ها تغییر نکند، داکر از ککش مرحله قبل استفاده می‌کند و چیزی دانلود نمی‌شود
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# ۴. نصب تمام وابستگی‌ها
+RUN npm install --legacy-peer-deps
+
+# ۵. حالا کل سورس‌کد را کپی می‌کنیم
+# با این کار، تغییر در کدهای شما باعث دانلود مجدد پکیج‌ها نمی‌شود
+COPY . .
+
+# ۶. ساخت کلاینت پریزما با نسخه دقیق پروژه
+RUN npx prisma@5.22.0 generate
+
+# ۷. بیلد گرفتن از پروژه
+RUN npm run build
+
+# باز کردن پورت بک‌اند
+EXPOSE 4000
+
+# ۸. اجرای برنامه
+# نکته: مسیر را در package.json به dist/src/main تغییر داده باشی
+CMD ["npm", "run", "start:prod"]
