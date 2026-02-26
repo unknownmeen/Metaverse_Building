@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { v4 as uuidv4 } from 'uuid';
-import { MissionStatus, Priority } from '@prisma/client';
+import { MissionStatus, Priority, UserRole } from '@prisma/client';
 import { MissionRepository } from './mission.repository';
 import { MissionStateMachine } from './state/mission-state-machine';
 import { CreateMissionInput } from './dto/create-mission.input';
@@ -12,6 +12,7 @@ import {
   MISSION_ASSIGNED,
   MissionAssignedEvent,
 } from '../common/events/mission.events';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class MissionWriteService {
@@ -20,9 +21,20 @@ export class MissionWriteService {
   constructor(
     private missionRepo: MissionRepository,
     private eventEmitter: EventEmitter2,
+    private userService: UserService,
   ) {}
 
+  private async ensureAssigneeNotObserver(assigneeId: number) {
+    const user = await this.userService.findById(assigneeId);
+    if (user?.role === UserRole.OBSERVER) {
+      throw new BadRequestException('کاربر مانیتور نمی‌تواند انجام‌دهنده تسک باشد');
+    }
+  }
+
   async create(input: CreateMissionInput, creatorId: number) {
+    if (input.assigneeId != null) {
+      await this.ensureAssigneeNotObserver(input.assigneeId);
+    }
     const id = `m-${uuidv4().slice(0, 8)}`;
     const hasAssignee = input.assigneeId != null;
     const created = await this.missionRepo.create({
@@ -56,6 +68,7 @@ export class MissionWriteService {
     if (input.priority != null) data.priority = input.priority;
     if (input.dueDate != null) data.dueDate = new Date(input.dueDate);
     if (input.assigneeId != null) {
+      await this.ensureAssigneeNotObserver(input.assigneeId);
       data.assigneeId = input.assigneeId;
       this.eventEmitter.emit(MISSION_ASSIGNED, {
         missionId: id,
@@ -91,6 +104,10 @@ export class MissionWriteService {
   }
 
   async takeMission(id: string, userId: number) {
+    const user = await this.userService.findById(userId);
+    if (user?.role === UserRole.OBSERVER) {
+      throw new BadRequestException('کاربر مانیتور نمی‌تواند تسک بگیرد');
+    }
     const existing = await this.missionRepo.findById(id);
     if (!existing) throw new NotFoundException('ماموریت یافت نشد');
     if (existing.status !== MissionStatus.PENDING) {

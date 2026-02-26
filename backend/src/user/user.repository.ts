@@ -19,6 +19,7 @@ export class UserRepository {
 
   async findAll() {
     return this.prisma.user.findMany({
+      where: { role: { not: 'OBSERVER' } },
       select: { id: true, name: true, phone: true, avatarId: true, role: true, createdAt: true, updatedAt: true },
       orderBy: { id: 'asc' },
     });

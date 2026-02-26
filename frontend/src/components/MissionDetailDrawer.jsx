@@ -466,7 +466,8 @@ export default function MissionDetailDrawer() {
 
   const assignee = getUserById(mission.assignee);
   const steps = [...(mission.judgingSteps || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const judgeOptions = state.users.filter((u) => u.role === 'judge' || u.role === 'admin');
+  const assignableUsers = state.users.filter((u) => u.role !== 'observer');
+  const judgeOptions = state.users.filter((u) => (u.role === 'judge' || u.role === 'admin') && u.role !== 'observer');
 
   const STEP_CLOSED = '__closed__';
   const resolvedActiveStepId = (() => {
@@ -681,7 +682,7 @@ export default function MissionDetailDrawer() {
               disabled={updating}
             >
               <option value="">{t('common.select')}</option>
-              {state.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
@@ -795,7 +796,7 @@ export default function MissionDetailDrawer() {
 
         <AttachmentSection missionId={mission.id} />
 
-        {mission.status === 'pending' && !editMode && (
+        {mission.status === 'pending' && !editMode && state.user?.role !== 'observer' && (
           <button
             onClick={handleTakeMission}
             disabled={taking}

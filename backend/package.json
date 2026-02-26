@@ -23,7 +23,11 @@
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio",
     "prisma:add-two-users": "ts-node prisma/add-two-users.ts",
-    "prisma:fix-user-sequence": "ts-node prisma/fix-user-sequence.ts"
+    "prisma:fix-user-sequence": "ts-node prisma/fix-user-sequence.ts",
+    "prisma:add-amir-meysam": "ts-node prisma/add-amir-meysam.ts",
+    "prisma:set-roles": "ts-node prisma/set-roles-admins-judges.ts",
+    "prisma:add-observer": "ts-node prisma/add-observer.ts",
+    "prisma:set-observers": "ts-node prisma/set-observers.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

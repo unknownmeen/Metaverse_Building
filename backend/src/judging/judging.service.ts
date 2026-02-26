@@ -1,13 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { v4 as uuidv4 } from 'uuid';
-import { StepStatus } from '@prisma/client';
+import { StepStatus, UserRole } from '@prisma/client';
 import { JudgingRepository } from './judging.repository';
 import { StepStateMachine } from './state/step-state-machine';
 import { CreateJudgingStepInput } from './dto/create-judging-step.input';
 import { UpdateJudgingStepInput } from './dto/update-judging-step.input';
 import { JUDGING_STEP_UPDATED, JudgingStepUpdatedEvent } from '../common/events/judging.events';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class JudgingService {
@@ -17,13 +18,22 @@ export class JudgingService {
     private judgingRepo: JudgingRepository,
     private eventEmitter: EventEmitter2,
     private prisma: PrismaService,
+    private userService: UserService,
   ) {}
+
+  private async ensureJudgeNotObserver(judgeId: number) {
+    const user = await this.userService.findById(judgeId);
+    if (user?.role === UserRole.OBSERVER) {
+      throw new BadRequestException('کاربر مانیتور نمی‌تواند داور باشد');
+    }
+  }
 
   async findById(id: string) {
     return this.judgingRepo.findById(id);
   }
 
   async create(input: CreateJudgingStepInput, userId: number) {
+    await this.ensureJudgeNotObserver(input.judgeId);
     const mission = await this.prisma.mission.findUnique({ where: { id: input.missionId } });
     if (!mission) throw new NotFoundException('ماموریت یافت نشد');
     const order = (await this.judgingRepo.getMaxOrder(input.missionId)) + 1;
@@ -40,6 +50,9 @@ export class JudgingService {
   async update(stepId: string, input: UpdateJudgingStepInput) {
     const step = await this.judgingRepo.findById(stepId);
     if (!step) throw new NotFoundException('گام داوری یافت نشد');
+    if (input.judgeId != null) {
+      await this.ensureJudgeNotObserver(input.judgeId);
+    }
     const data: { title?: string; judgeId?: number } = {};
     if (input.title != null) data.title = input.title;
     if (input.judgeId != null) data.judgeId = input.judgeId;

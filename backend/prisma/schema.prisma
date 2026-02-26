@@ -14,6 +14,7 @@ enum UserRole {
   ADMIN
   USER
   JUDGE
+  OBSERVER
 }
 
 enum MissionStatus {

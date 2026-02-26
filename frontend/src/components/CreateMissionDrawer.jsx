@@ -163,7 +163,8 @@ export default function CreateMissionDrawer() {
     }
   };
 
-  const judges = state.users.filter(u => u.role === 'judge' || u.role === 'admin');
+  const assignableUsers = state.users.filter((u) => u.role !== 'observer');
+  const judges = state.users.filter((u) => (u.role === 'judge' || u.role === 'admin') && u.role !== 'observer');
 
   return (
     <Drawer
@@ -220,7 +221,7 @@ export default function CreateMissionDrawer() {
               disabled={submitting}
             >
               <option value="">{t('common.select')}</option>
-              {state.users.map(u => (
+              {assignableUsers.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
