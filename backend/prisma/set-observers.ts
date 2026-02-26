@@ -1,5 +1,6 @@
 /**
- * تنظیم مجید آقا حقی و علی آقا جان به نقش OBSERVER (مانیتور)
+ * تنظیم کاربران به نقش OBSERVER (مانیتور)
+ * با شماره تماس (نه id) چون id لوکال و سرور ممکن است فرق داشته باشد
  *
  * اجرا: npm run prisma:set-observers
  */
@@ -11,6 +12,8 @@ const prisma = new PrismaClient();
 const OBSERVERS: { phones: string[]; name: string }[] = [
   { phones: ['09128045528', '09128045529'], name: 'مجید آقا حقی' },
   { phones: ['09121234567'], name: 'علی آقا جان' },
+  { phones: ['09125678901'], name: 'امیر آقا' },
+  { phones: ['09125678902', '09138901234'], name: 'دکتر میثم' },
 ];
 
 async function main() {
@@ -29,7 +32,7 @@ async function main() {
       console.log(`⚠ ${name} (${phones.join(' یا ')}) در دیتابیس نیست.`);
     }
   }
-  console.log('\n✓ هر دو کاربر به نقش مانیتور (OBSERVER) تنظیم شدند.');
+  console.log('\n✓ همه کاربران به نقش مانیتور (OBSERVER) تنظیم شدند.');
 }
 
 main()
